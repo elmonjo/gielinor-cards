@@ -31,37 +31,35 @@ const getClientPoint = (event) => {
 export default function CardInstance({ card, game }) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
-  const activePointerId = useRef(null);
 
-  const onPointerDown = (e) => {
-    e.preventDefault();
+  const startDrag = (event) => {
+    event.preventDefault();
     dragging.current = true;
-    activePointerId.current = e.pointerId;
 
     game.bringToFront(card.instanceId);
 
     const table = document.querySelector(".table");
     const tableRect = table.getBoundingClientRect();
-    const point = getClientPoint(e);
+    const point = getClientPoint(event);
 
     offset.current = {
       x: point.x - tableRect.left - card.x,
       y: point.y - tableRect.top - card.y
     };
 
-    window.addEventListener("pointermove", onPointerMove, { passive: false });
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("touchcancel", onTouchEnd);
   };
 
-  const onPointerMove = (e) => {
+  const updateDrag = (event) => {
     if (!dragging.current) return;
-    if (activePointerId.current !== null && e.pointerId !== activePointerId.current) return;
-    e.preventDefault();
 
     const table = document.querySelector(".table");
     const tableRect = table.getBoundingClientRect();
-    const point = getClientPoint(e);
+    const point = getClientPoint(event);
     const maxX = Math.max(0, tableRect.width - CARD_WIDTH);
     const rawX = point.x - tableRect.left - offset.current.x;
     const rawY = point.y - tableRect.top - offset.current.y;
@@ -102,17 +100,17 @@ export default function CardInstance({ card, game }) {
     }
   };
 
-  const onPointerUp = (e) => {
-    if (activePointerId.current !== null && e.pointerId !== activePointerId.current) return;
-
+  const finishDrag = (event) => {
+    if (!dragging.current) return;
     dragging.current = false;
-    activePointerId.current = null;
 
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerUp);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
+    window.removeEventListener("touchcancel", onTouchEnd);
 
-    const point = getClientPoint(e);
+    const point = getClientPoint(event);
 
     game.setTableCards(prev => {
       const moving = prev.find(c => c.instanceId === card.instanceId);
@@ -128,7 +126,6 @@ export default function CardInstance({ card, game }) {
     });
 
     const dropZone = document.getElementById("binder-drop-zone");
-
     if (dropZone) {
       const rect = dropZone.getBoundingClientRect();
 
@@ -146,10 +143,28 @@ export default function CardInstance({ card, game }) {
     }
   };
 
+  const onMouseMove = (event) => {
+    updateDrag(event);
+  };
+
+  const onMouseUp = (event) => {
+    finishDrag(event);
+  };
+
+  const onTouchMove = (event) => {
+    event.preventDefault();
+    updateDrag(event);
+  };
+
+  const onTouchEnd = (event) => {
+    finishDrag(event);
+  };
+
   return (
     <div
       className={`card-instance ${card.previewSnap ? "preview" : ""} ${dragging.current ? "dragging" : ""}`}
-      onPointerDown={onPointerDown}
+      onMouseDown={startDrag}
+      onTouchStart={startDrag}
       style={{
         left: card.x,
         top: card.y,

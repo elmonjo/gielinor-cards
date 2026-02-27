@@ -6,7 +6,7 @@ export default function TableSurface({ game }) {
   const EXTRA_RIGHT_SPACE = 120;
   const EXTRA_BOTTOM_SPACE = 120;
   const baseHeight = 700;
-  const baseWidth = 960;
+  const baseWidth = 0;
   const dynamicHeight = Math.max(
     baseHeight,
     ...game.tableCards.map(card => (card.y || 0) + CARD_HEIGHT + EXTRA_BOTTOM_SPACE)

@@ -1037,33 +1037,28 @@ select {
   }
 
   .packs {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 8px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scroll-snap-type: x proximity;
-    padding-right: 10px;
+    width: 100%;
+    padding-right: 0;
+    padding-bottom: 6px;
   }
 
   .pack {
-    flex: 0 0 auto;
-    width: 122px;
-    height: 178px;
-    padding: 12px 6px 8px;
-    scroll-snap-align: start;
+    width: 100%;
+    max-width: none;
+    height: 142px;
+    padding: 10px 6px 8px;
   }
 
   .pack-name {
-    font-size: 14px;
-    margin-top: 6px;
+    font-size: 13px;
+    margin-top: 4px;
   }
 
   .pack-price {
-    font-size: 13px;
+    font-size: 12px;
     letter-spacing: 0.02em;
   }
 
@@ -1075,7 +1070,34 @@ select {
 
   .table {
     min-height: 560px;
-    width: max-content;
+    width: 100%;
+  }
+
+  .gc-card {
+    width: 100px;
+    height: 146px;
+    border-width: 2px;
+    border-radius: 6px;
+    padding: 4px;
+    gap: 3px;
+  }
+
+  .gc-head {
+    border-width: 1px;
+    padding: 3px 4px;
+  }
+
+  .gc-title {
+    font-size: 11px;
+  }
+
+  .gc-subtitle {
+    font-size: 10px;
+  }
+
+  .binder-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
   }
 
   .binder-panel,
@@ -1110,8 +1132,8 @@ select {
   }
 
   .binder-icon {
-    width: 68px;
-    height: 78px;
+    width: 54px;
+    height: 62px;
     left: 10px;
     bottom: 10px;
     top: auto;
@@ -1124,13 +1146,14 @@ select {
   }
 
   .binder-book-image {
-    width: 32px;
-    height: 32px;
+    width: 22px;
+    height: 22px;
   }
 
   .binder-text {
-    font-size: 9px;
-    margin-top: 5px;
+    font-size: 7px;
+    margin-top: 3px;
+    line-height: 1;
   }
 
   .overlay-stats {
@@ -1183,16 +1206,45 @@ select {
   }
 
   .pack {
-    width: 114px;
-    height: 168px;
+    height: 132px;
   }
 
   .pack-name {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .pack-price {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  .gc-card {
+    width: 92px;
+    height: 134px;
+  }
+
+  .gc-title {
+    font-size: 10px;
+  }
+
+  .gc-subtitle {
+    font-size: 9px;
+  }
+
+  .binder-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
+  }
+
+  .binder-icon {
+    width: 50px;
+    height: 56px;
+    left: 8px;
+    bottom: 8px;
+  }
+
+  .binder-book-image {
+    width: 20px;
+    height: 20px;
   }
 
   .main {
