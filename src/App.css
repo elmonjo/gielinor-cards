@@ -635,6 +635,71 @@ select {
     font-size: 6px;
     line-height: 1;
   }
+
+  .packs {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .pack {
+    width: 60px;
+    max-width: 60px;
+    height: 88px;
+    flex: 0 0 auto;
+    padding: 2px 1px;
+    border-width: 1px;
+    box-sizing: border-box;
+  }
+
+  .pack-name {
+    font-size: 7px;
+    margin-top: 1px;
+  }
+
+  .pack-price {
+    font-size: 6px;
+    letter-spacing: 0;
+    padding-bottom: 0;
+  }
+
+  .pack-stamp {
+    font-size: 6px;
+    border-width: 1px;
+    padding: 1px 2px;
+  }
+
+  .binder-icon {
+    width: 50px;
+    height: 56px;
+    left: 8px;
+    bottom: 8px;
+    top: auto;
+    transform: none;
+    z-index: 1100;
+  }
+
+  .binder-icon:hover {
+    transform: none;
+  }
+
+  .binder-book-image {
+    width: 20px;
+    height: 20px;
+  }
+
+  .binder-text {
+    font-size: 6px;
+    margin-top: 3px;
+    line-height: 1;
+  }
 }
 
 /* Pack Draft Overlay */
@@ -1080,37 +1145,41 @@ select {
   }
 
   .packs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
     width: 100%;
-    padding-right: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
 
   .pack {
-    width: 33px;
-    max-width: 33px;
-    aspect-ratio: 130 / 190;
-    height: auto;
+    width: 60px;
+    max-width: 60px;
+    height: 88px;
     padding: 2px 1px;
     border-width: 1px;
     box-sizing: border-box;
+    flex: 0 0 auto;
   }
 
   .pack-name {
-    font-size: 4px;
+    font-size: 7px;
     margin-top: 1px;
   }
 
   .pack-price {
-    font-size: 4px;
+    font-size: 6px;
     letter-spacing: 0;
     padding-bottom: 0;
   }
 
   .pack-stamp {
-    font-size: 4px;
+    font-size: 6px;
     border-width: 1px;
     padding: 1px 2px;
   }
@@ -1261,18 +1330,17 @@ select {
   }
 
   .pack {
-    width: 30px;
-    max-width: 30px;
-    aspect-ratio: 130 / 190;
-    height: auto;
+    width: 60px;
+    max-width: 60px;
+    height: 88px;
   }
 
   .pack-name {
-    font-size: 4px;
+    font-size: 7px;
   }
 
   .pack-price {
-    font-size: 4px;
+    font-size: 6px;
   }
 
   .gc-card {

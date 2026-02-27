@@ -41,8 +41,19 @@ function shuffle(items) {
   return [...items].sort(() => 0.5 - Math.random());
 }
 
+function getRuntimeCardSize() {
+  if (typeof window === "undefined") {
+    return { width: 130, height: 190 };
+  }
+
+  const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  return isTouchDevice
+    ? { width: 60, height: 88 }
+    : { width: 130, height: 190 };
+}
+
 function createCardInstances(cardList) {
-  const CARD_WIDTH = 130;
+  const { width: CARD_WIDTH } = getRuntimeCardSize();
   const GAP = 20;
   const viewportWidth =
     typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -264,6 +275,52 @@ export function useGameState(storageNamespace = "default") {
     normalizePackPools(session.activeState.packPools)
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const clampCardsToViewport = () => {
+      const table = document.querySelector(".table");
+      const { width: cardWidth } = getRuntimeCardSize();
+      const tableWidth = table?.clientWidth || window.innerWidth;
+      const maxX = Math.max(0, tableWidth - cardWidth);
+
+      setTableCards(prev => {
+        let changed = false;
+
+        const next = prev.map(card => {
+          const clampedX = Math.min(Math.max(card.x ?? 0, 0), maxX);
+          const clampedY = Math.max(20, card.y ?? 20);
+
+          if (clampedX !== card.x || clampedY !== card.y) {
+            changed = true;
+            return {
+              ...card,
+              x: clampedX,
+              y: clampedY
+            };
+          }
+
+          return card;
+        });
+
+        return changed ? next : prev;
+      });
+    };
+
+    const handleResize = () => {
+      window.requestAnimationFrame(clampCardsToViewport);
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, []);
+
   function hydrateProfileState(state) {
     setDraftState(null);
     setStarterRevealState(state?.starterRevealState || null);
@@ -404,7 +461,7 @@ export function useGameState(storageNamespace = "default") {
       {
         ...picked,
         instanceId: crypto.randomUUID(),
-        x: (window.innerWidth - 130) / 2,
+        x: (window.innerWidth - getRuntimeCardSize().width) / 2,
         y: 260,
         previewSnap: false,
         zIndex: nextZ
@@ -491,12 +548,13 @@ export function useGameState(storageNamespace = "default") {
 
     const nextZ = zCounter + 1;
     setZCounter(nextZ);
+    const { width: cardWidth } = getRuntimeCardSize();
     setTableCards(prev => [
       ...prev,
       {
         ...template,
         instanceId: crypto.randomUUID(),
-        x: Math.max(0, ((typeof window !== "undefined" ? window.innerWidth : 1200) - 130) / 2),
+        x: Math.max(0, ((typeof window !== "undefined" ? window.innerWidth : 1200) - cardWidth) / 2),
         y: 260,
         previewSnap: false,
         zIndex: nextZ

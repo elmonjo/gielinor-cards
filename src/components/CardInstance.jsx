@@ -3,8 +3,8 @@ import { applySnap, detectSnapTarget } from "../snapEngine";
 
 const CARD_WIDTH_DESKTOP = 130;
 const CARD_HEIGHT_DESKTOP = 190;
-const CARD_WIDTH_MOBILE = 65;
-const CARD_HEIGHT_MOBILE = 95;
+const CARD_WIDTH_MOBILE = 60;
+const CARD_HEIGHT_MOBILE = 88;
 const TABLE_TOP_GUTTER = 20;
 
 const clamp = (value, min, max) =>
@@ -36,7 +36,9 @@ export default function CardInstance({ card, game }) {
   const offset = useRef({ x: 0, y: 0 });
 
   const getCardDimensions = () => {
-    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 740px)").matches;
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     return {
       width: isMobile ? CARD_WIDTH_MOBILE : CARD_WIDTH_DESKTOP,
       height: isMobile ? CARD_HEIGHT_MOBILE : CARD_HEIGHT_DESKTOP
