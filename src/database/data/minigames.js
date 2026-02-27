@@ -1,0 +1,26 @@
+export const minigameCardsData = [
+  // Minigames
+  { id:"castle_wars", title:"Castle Wars", type:"minigame", rarity:"common", path:"Novice", shiny:false, image:"/card-images/castle_wars.png" },
+  { id:"fishing_trawler", title:"Fishing Trawler", type:"minigame", rarity:"common", path:"Novice", shiny:false, image:"/card-images/fishing_trawler.png" },
+  { id:"tithe_farm", title:"Tithe Farm", type:"minigame", rarity:"common", path:"Intermediate", shiny:false, image:"/card-images/tithe_farm.png" },
+  { id:"barbarian_assault", title:"Barbarian Assault", type:"minigame", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/barbarian_assault.png" },
+  { id:"pest_control", title:"Pest Control", type:"minigame", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/pest_control.png" },
+  { id:"mage_training_arena", title:"Mage Training Arena", type:"minigame", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/mage_training_arena.png" },
+  { id:"blast_furnace", title:"Blast Furnace", type:"minigame", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/blast_furnace.png" },
+  { id:"brimhaven_agility_arena", title:"Brimhaven Agility Arena", type:"minigame", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/brimhaven_agility_arena.png" },
+  { id:"shades_of_mortton", title:"Shades of Mort'ton", type:"minigame", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/shades_of_mortton.png" },
+  { id:"rogues_den", title:"Rogues' Den", type:"minigame", rarity:"rare", path:"Experienced", shiny:false, image:"/card-images/rogues_den.png" },
+  { id:"soul_wars", title:"Soul Wars", type:"minigame", rarity:"epic", path:"Experienced", shiny:false, image:"/card-images/soul_wars.png" },
+  { id:"last_man_standing", title:"Last Man Standing", type:"minigame", rarity:"epic", path:"Experienced", shiny:false, image:"/card-images/last_man_standing.png" },
+  { id:"guardians_of_the_rift", title:"Guardians of the Rift", type:"minigame", rarity:"epic", path:"Intermediate", shiny:false, image:"/card-images/guardians_of_the_rift.png" },
+  { id:"tempoross", title:"Tempoross", type:"minigame", rarity:"epic", path:"Experienced", shiny:false, image:"/card-images/tempoross.png" },
+  { id:"wintertodt", title:"Wintertodt", type:"minigame", rarity:"epic", path:"Experienced", shiny:false, image:"/card-images/wintertodt.png" },
+  { id:"giants_foundry", title:"Giants' Foundry", type:"minigame", rarity:"epic", path:"Novice", shiny:false, image:"/card-images/giants_foundry.png" },
+  { id:"mahogany_homes", title:"Mahogany Homes", type:"minigame", rarity:"epic", path:"Experienced", shiny:false, image:"/card-images/mahogany_homes.png" },
+  { id:"pyramid_plunder", title:"Pyramid Plunder", type:"minigame", rarity:"epic", path:"Intermediate", shiny:false, image:"/card-images/pyramid_plunder.png" },
+  { id:"trouble_brewing", title:"Trouble Brewing", type:"minigame", rarity:"epic", path:"Master", shiny:true, image:"/card-images/trouble_brewing.png" },
+  { id:"hallowed_sepulchre", title:"Hallowed Sepulchre", type:"minigame", rarity:"epic", path:"Master", shiny:true, image:"/card-images/hallowed_sepulchre.png" },
+  { id:"volcanic_mine", title:"Volcanic Mine", type:"minigame", rarity:"epic", path:"Experienced", shiny:true, image:"/card-images/volcanic_mine.png" },
+  { id:"tzhaar_fight_cave", title:"TzHaar Fight Cave", type:"minigame", rarity:"epic", path:"Master", shiny:true, image:"/card-images/tzhaar_fight_cave.png" },
+  { id:"inferno_minigame", title:"Inferno", type:"minigame", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/inferno_minigame.png" }
+];
