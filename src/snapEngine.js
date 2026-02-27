@@ -1,4 +1,4 @@
-const SNAP_DISTANCE = 30;
+const SNAP_DISTANCE = 14;
 const CARD_WIDTH = 130;
 const CARD_HEIGHT = 190;
 

@@ -652,37 +652,37 @@ select {
   }
 
   .pack {
-    width: 66px;
-    max-width: 66px;
-    height: 97px;
+    width: 92px;
+    max-width: 92px;
+    height: 135px;
     flex: 0 0 auto;
-    padding: 2px 1px;
+    padding: 4px 2px;
     border-width: 1px;
     box-sizing: border-box;
   }
 
   .pack-name {
-    font-size: 6px;
+    font-size: 8px;
     margin-top: 1px;
     line-height: 1;
-    white-space: normal;
-    text-wrap: balance;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-    letter-spacing: 0.005em;
-    min-height: 12px;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+    letter-spacing: 0;
+    min-height: 0;
   }
 
   .pack-price {
-    font-size: 6px;
+    font-size: 8px;
     letter-spacing: 0;
     padding-bottom: 0;
   }
 
   .pack-stamp {
-    font-size: 6px;
+    font-size: 8px;
     border-width: 1px;
-    padding: 1px 2px;
+    padding: 2px 4px;
   }
 
   .binder-icon {
