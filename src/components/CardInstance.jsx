@@ -1,7 +1,10 @@
 import { useRef } from "react";
 import { applySnap, detectSnapTarget } from "../snapEngine";
 
-const CARD_WIDTH = 130;
+const CARD_WIDTH_DESKTOP = 130;
+const CARD_HEIGHT_DESKTOP = 190;
+const CARD_WIDTH_MOBILE = 65;
+const CARD_HEIGHT_MOBILE = 95;
 const TABLE_TOP_GUTTER = 20;
 
 const clamp = (value, min, max) =>
@@ -32,6 +35,14 @@ export default function CardInstance({ card, game }) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
+  const getCardDimensions = () => {
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 740px)").matches;
+    return {
+      width: isMobile ? CARD_WIDTH_MOBILE : CARD_WIDTH_DESKTOP,
+      height: isMobile ? CARD_HEIGHT_MOBILE : CARD_HEIGHT_DESKTOP
+    };
+  };
+
   const startDrag = (event) => {
     event.preventDefault();
     dragging.current = true;
@@ -60,7 +71,8 @@ export default function CardInstance({ card, game }) {
     const table = document.querySelector(".table");
     const tableRect = table.getBoundingClientRect();
     const point = getClientPoint(event);
-    const maxX = Math.max(0, tableRect.width - CARD_WIDTH);
+    const { width, height } = getCardDimensions();
+    const maxX = Math.max(0, tableRect.width - width);
     const rawX = point.x - tableRect.left - offset.current.x;
     const rawY = point.y - tableRect.top - offset.current.y;
     const newX = clamp(rawX, 0, maxX);
@@ -71,7 +83,7 @@ export default function CardInstance({ card, game }) {
       y: newY
     };
 
-    const snapTarget = detectSnapTarget(movingCard, game.tableCards);
+    const snapTarget = detectSnapTarget(movingCard, game.tableCards, width, height);
 
     game.setTableCards(prev =>
       prev.map(c => {
@@ -116,7 +128,8 @@ export default function CardInstance({ card, game }) {
       const moving = prev.find(c => c.instanceId === card.instanceId);
       if (!moving) return prev;
 
-      const snapped = applySnap(moving, prev);
+      const { width, height } = getCardDimensions();
+      const snapped = applySnap(moving, prev, width, height);
 
       return prev.map(c =>
         c.instanceId === card.instanceId

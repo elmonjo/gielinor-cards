@@ -31,12 +31,14 @@ html, body, #root {
   padding: 0;
   height: 100%;
   width: 100%;
+  overflow-x: hidden;
 }
 
 .app {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   color: var(--ink-1);
@@ -64,6 +66,8 @@ select {
   gap: var(--space-4);
   align-items: start;
   padding: 40px 36px 22px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .left {
@@ -248,6 +252,8 @@ select {
   position: relative;
   overflow: auto;
   border-top: 1px solid rgba(212, 175, 55, 0.28);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .main::before {
@@ -1048,18 +1054,26 @@ select {
   .pack {
     width: 100%;
     max-width: none;
-    height: 142px;
-    padding: 10px 6px 8px;
+    height: 95px;
+    padding: 6px 4px;
+    border-width: 2px;
   }
 
   .pack-name {
-    font-size: 13px;
-    margin-top: 4px;
+    font-size: 10px;
+    margin-top: 2px;
   }
 
   .pack-price {
-    font-size: 12px;
+    font-size: 10px;
     letter-spacing: 0.02em;
+    padding-bottom: 2px;
+  }
+
+  .pack-stamp {
+    font-size: 10px;
+    border-width: 2px;
+    padding: 2px 6px;
   }
 
   .main {
@@ -1074,30 +1088,32 @@ select {
   }
 
   .gc-card {
-    width: 100px;
-    height: 146px;
+    width: 65px;
+    height: 95px;
     border-width: 2px;
-    border-radius: 6px;
-    padding: 4px;
-    gap: 3px;
+    border-radius: 4px;
+    padding: 2px;
+    gap: 1px;
   }
 
   .gc-head {
     border-width: 1px;
-    padding: 3px 4px;
+    padding: 2px;
   }
 
   .gc-title {
-    font-size: 11px;
+    font-size: 8px;
+    line-height: 1;
   }
 
   .gc-subtitle {
-    font-size: 10px;
+    font-size: 7px;
+    line-height: 1;
   }
 
   .binder-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+    gap: 6px;
   }
 
   .binder-panel,
@@ -1132,8 +1148,8 @@ select {
   }
 
   .binder-icon {
-    width: 54px;
-    height: 62px;
+    width: 47px;
+    height: 56px;
     left: 10px;
     bottom: 10px;
     top: auto;
@@ -1146,12 +1162,12 @@ select {
   }
 
   .binder-book-image {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 
   .binder-text {
-    font-size: 7px;
+    font-size: 6px;
     margin-top: 3px;
     line-height: 1;
   }
@@ -1206,33 +1222,33 @@ select {
   }
 
   .pack {
-    height: 132px;
+    height: 95px;
   }
 
   .pack-name {
-    font-size: 12px;
-  }
-
-  .pack-price {
-    font-size: 11px;
-  }
-
-  .gc-card {
-    width: 92px;
-    height: 134px;
-  }
-
-  .gc-title {
-    font-size: 10px;
-  }
-
-  .gc-subtitle {
     font-size: 9px;
   }
 
+  .pack-price {
+    font-size: 9px;
+  }
+
+  .gc-card {
+    width: 60px;
+    height: 88px;
+  }
+
+  .gc-title {
+    font-size: 7px;
+  }
+
+  .gc-subtitle {
+    font-size: 6px;
+  }
+
   .binder-grid {
-    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 6px;
   }
 
   .binder-icon {
