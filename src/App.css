@@ -652,9 +652,9 @@ select {
   }
 
   .pack {
-    width: 96px;
-    max-width: 96px;
-    height: 140px;
+    width: 106px;
+    max-width: 106px;
+    height: 154px;
     flex: 0 0 auto;
     padding: 4px 2px;
     border-width: 1px;
