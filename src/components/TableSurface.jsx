@@ -1,18 +1,28 @@
 import CardInstance from "./CardInstance";
 
 export default function TableSurface({ game }) {
+  const CARD_WIDTH = 130;
   const CARD_HEIGHT = 190;
+  const EXTRA_RIGHT_SPACE = 120;
   const EXTRA_BOTTOM_SPACE = 120;
   const baseHeight = 700;
+  const baseWidth = 960;
   const dynamicHeight = Math.max(
     baseHeight,
     ...game.tableCards.map(card => (card.y || 0) + CARD_HEIGHT + EXTRA_BOTTOM_SPACE)
+  );
+  const dynamicWidth = Math.max(
+    baseWidth,
+    ...game.tableCards.map(card => (card.x || 0) + CARD_WIDTH + EXTRA_RIGHT_SPACE)
   );
 
   return (
     <div
       className="table"
-      style={{ minHeight: dynamicHeight }}
+      style={{
+        minHeight: dynamicHeight,
+        minWidth: dynamicWidth
+      }}
     >
       {game.tableCards.map(card => (
         <CardInstance
