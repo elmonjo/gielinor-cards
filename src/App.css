@@ -611,6 +611,30 @@ select {
     transform: none;
     box-shadow: var(--shadow-1);
   }
+
+  .gc-card {
+    width: 60px;
+    height: 88px;
+    border-width: 2px;
+    border-radius: 4px;
+    padding: 2px;
+    gap: 1px;
+  }
+
+  .gc-head {
+    border-width: 1px;
+    padding: 2px;
+  }
+
+  .gc-title {
+    font-size: 7px;
+    line-height: 1;
+  }
+
+  .gc-subtitle {
+    font-size: 6px;
+    line-height: 1;
+  }
 }
 
 /* Pack Draft Overlay */
@@ -1065,30 +1089,30 @@ select {
   }
 
   .pack {
-    width: 100%;
-    max-width: none;
+    width: 33px;
+    max-width: 33px;
     aspect-ratio: 130 / 190;
     height: auto;
-    padding: 6px 4px;
-    border-width: 2px;
+    padding: 2px 1px;
+    border-width: 1px;
     box-sizing: border-box;
   }
 
   .pack-name {
-    font-size: 10px;
-    margin-top: 2px;
+    font-size: 4px;
+    margin-top: 1px;
   }
 
   .pack-price {
-    font-size: 10px;
-    letter-spacing: 0.02em;
-    padding-bottom: 2px;
+    font-size: 4px;
+    letter-spacing: 0;
+    padding-bottom: 0;
   }
 
   .pack-stamp {
-    font-size: 10px;
-    border-width: 2px;
-    padding: 2px 6px;
+    font-size: 4px;
+    border-width: 1px;
+    padding: 1px 2px;
   }
 
   .main {
@@ -1237,16 +1261,18 @@ select {
   }
 
   .pack {
+    width: 30px;
+    max-width: 30px;
     aspect-ratio: 130 / 190;
     height: auto;
   }
 
   .pack-name {
-    font-size: 9px;
+    font-size: 4px;
   }
 
   .pack-price {
-    font-size: 9px;
+    font-size: 4px;
   }
 
   .gc-card {
