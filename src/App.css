@@ -639,12 +639,14 @@ select {
   .packs {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 8px;
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
   }
@@ -660,8 +662,15 @@ select {
   }
 
   .pack-name {
-    font-size: 7px;
+    font-size: 6px;
     margin-top: 1px;
+    line-height: 1;
+    white-space: normal;
+    text-wrap: balance;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.005em;
+    min-height: 12px;
   }
 
   .pack-price {
