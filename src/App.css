@@ -603,6 +603,16 @@ select {
 }
 /* Cards */
 
+@media (hover: none) and (pointer: coarse) {
+  .card-instance:not(.dragging) .gc-card:hover,
+  .binder-slot.owned .gc-card:hover,
+  .draft-card.revealed:hover,
+  .pack:hover {
+    transform: none;
+    box-shadow: var(--shadow-1);
+  }
+}
+
 /* Pack Draft Overlay */
 .draft-overlay {
   position: fixed;
@@ -675,6 +685,7 @@ select {
 }
 
 .draft-face-front .gc-card {
+  width: 100%;
   height: 100%;
 }
 
@@ -733,9 +744,10 @@ select {
   backdrop-filter: blur(3px);
   z-index: 1300;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 24px;
+  overflow-y: auto;
 }
 
 .overlay-panel {
@@ -747,6 +759,7 @@ select {
   padding: 20px;
   color: var(--ink-1);
   font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  margin: auto 0;
 }
 
 .overlay-title {
@@ -1054,9 +1067,11 @@ select {
   .pack {
     width: 100%;
     max-width: none;
-    height: 95px;
+    aspect-ratio: 130 / 190;
+    height: auto;
     padding: 6px 4px;
     border-width: 2px;
+    box-sizing: border-box;
   }
 
   .pack-name {
@@ -1201,8 +1216,8 @@ select {
   }
 
   .draft-card {
-    width: 118px;
-    height: 172px;
+    width: 100px;
+    height: 146px;
   }
 
   .draft-header {
@@ -1222,7 +1237,8 @@ select {
   }
 
   .pack {
-    height: 95px;
+    aspect-ratio: 130 / 190;
+    height: auto;
   }
 
   .pack-name {
