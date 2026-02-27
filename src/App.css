@@ -652,9 +652,9 @@ select {
   }
 
   .pack {
-    width: 106px;
-    max-width: 106px;
-    height: 154px;
+    width: 90px;
+    max-width: 90px;
+    height: 131px;
     flex: 0 0 auto;
     padding: 4px 2px;
     border-width: 1px;
@@ -1170,9 +1170,9 @@ select {
   }
 
   .pack {
-    width: 106px;
-    max-width: 106px;
-    height: 154px;
+    width: 90px;
+    max-width: 90px;
+    height: 131px;
     padding: 2px 1px;
     border-width: 1px;
     box-sizing: border-box;
@@ -1342,9 +1342,9 @@ select {
   }
 
   .pack {
-    width: 106px;
-    max-width: 106px;
-    height: 154px;
+    width: 90px;
+    max-width: 90px;
+    height: 131px;
   }
 
   .pack-name {
