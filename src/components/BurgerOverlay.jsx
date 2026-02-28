@@ -3,6 +3,7 @@ import { cards as allCards } from "../database/cardCatalog";
 
 export default function BurgerOverlay({ game, auth }) {
   const [newProfileName, setNewProfileName] = useState("");
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const collectedUnique = new Set([
     ...game.tableCards.map(c => c.id),
@@ -116,6 +117,13 @@ export default function BurgerOverlay({ game, auth }) {
 
           <button
             type="button"
+            onClick={() => setRulesOpen(true)}
+          >
+            Rules
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               game.setMenuOpen(false);
               game.setBinderOpen(true);
@@ -131,6 +139,36 @@ export default function BurgerOverlay({ game, auth }) {
             Close Menu
           </button>
         </div>
+
+        {rulesOpen && (
+          <div
+            className="overlay-rules-backdrop"
+            onClick={() => setRulesOpen(false)}
+          >
+            <div
+              className="overlay-rules-panel"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="overlay-rules-title">Game Rules</div>
+              <div className="overlay-rules-list">
+                <p>1. Deposit GP to buy packs.</p>
+                <p>2. Opening a pack shows 3 cards; pick 1.</p>
+                <p>3. Unpicked cards return to that pack pool.</p>
+                <p>4. Drag cards on the table to organize your setup.</p>
+                <p>5. Move cards to Collection Log to store progress.</p>
+                <p>6. A pack is completed when its pool is fully depleted.</p>
+              </div>
+              <div className="overlay-rules-actions">
+                <button
+                  type="button"
+                  onClick={() => setRulesOpen(false)}
+                >
+                  Close Rules
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

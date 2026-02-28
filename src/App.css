@@ -933,6 +933,64 @@ select {
   gap: 10px;
 }
 
+.overlay-rules-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 6, 3, 0.78);
+  backdrop-filter: blur(2px);
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.overlay-rules-panel {
+  width: min(560px, 100%);
+  background: linear-gradient(170deg, #2d1c11, #1b120c);
+  border: 2px solid #8a6b2f;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: 16px;
+}
+
+.overlay-rules-title {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: var(--ink-1);
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+
+.overlay-rules-list {
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.overlay-rules-list p {
+  margin: 0 0 8px;
+}
+
+.overlay-rules-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.overlay-rules-actions button {
+  border: 1px solid #ad8940;
+  background: #2a1d10;
+  color: var(--ink-1);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.overlay-rules-actions button:hover {
+  border-color: #d7b15e;
+  background: #352212;
+}
+
 .overlay-debug {
   margin-bottom: 16px;
   padding: 12px;
@@ -1312,6 +1370,25 @@ select {
 
   .overlay-actions button {
     flex: 1 1 100%;
+  }
+
+  .overlay-rules-backdrop {
+    padding: 10px;
+  }
+
+  .overlay-rules-panel {
+    width: 100%;
+    max-height: 92vh;
+    overflow: auto;
+    padding: 14px;
+  }
+
+  .overlay-rules-title {
+    font-size: 20px;
+  }
+
+  .overlay-rules-list {
+    font-size: 14px;
   }
 
   .draft-panel {

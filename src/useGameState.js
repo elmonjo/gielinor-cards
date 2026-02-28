@@ -117,11 +117,26 @@ function normalizePackPools(packPools) {
 
 function createInitialRunState() {
   const packPools = createBasePackPools();
-  const novicePool = shuffle(packPools.Novice);
-  const starter = novicePool.slice(0, 5);
+  const guaranteedStarterIds = [
+    "ironman_armour_set",
+    "training_sword",
+    "training_shield",
+    "training_bow"
+  ];
 
-  packPools.Novice = packPools.Novice.filter(
-    c => !starter.some(s => s.id === c.id)
+  const guaranteedStarters = guaranteedStarterIds
+    .map(id => cards.find(card => card.id === id))
+    .filter(Boolean);
+
+  const noviceSkills = shuffle(
+    packPools.Novice.filter(card => card.type === "skill")
+  );
+  const skillStarter = noviceSkills.slice(0, 3);
+  const starterOptions = [...guaranteedStarters, ...skillStarter];
+
+  packPools.Novice = packPools.Novice.filter(card =>
+    !guaranteedStarters.some(s => s.id === card.id) &&
+    !skillStarter.some(s => s.id === card.id)
   );
 
   return {
@@ -130,10 +145,12 @@ function createInitialRunState() {
     binderCards: [],
     packPools,
     zCounter: 1,
-    starterRevealState: {
-      packName: "Novice Starter Pack",
-      options: starter
-    }
+    starterRevealState: starterOptions.length > 0
+      ? {
+          packName: "Novice Starter Pack",
+          options: starterOptions
+        }
+      : null
   };
 }
 

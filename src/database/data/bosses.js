@@ -46,6 +46,7 @@
   { id:"cox", title:"Chambers of Xeric", type:"boss", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/cox.png" },
   { id:"tob", title:"Theatre of Blood", type:"boss", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/tob.png" },
   { id:"toa", title:"Tombs of Amascut", type:"boss", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/toa.png" },
+  { id:"moons_of_peril", title:"Moons of Peril", type:"boss", rarity:"epic", path:"Master", shiny:false, image:"/card-images/moons_of_peril.png" },
   { id:"scurrius", title:"Scurrius", type:"boss", rarity:"rare", path:"Experienced", shiny:false, image:"/card-images/scurrius.png" },
   { id:"royal_titans", title:"Royal Titans", type:"boss", rarity:"epic", path:"Master", shiny:false, image:"/card-images/royal_titans.png" },
 ];
