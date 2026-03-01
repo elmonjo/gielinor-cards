@@ -17,25 +17,26 @@ function safeParse(value, fallback) {
   }
 }
 
-function normalizeUsername(username) {
-  return username.trim().toLowerCase();
+function normalizeEmail(email) {
+  return email.trim().toLowerCase();
 }
 
-function usernameToEmail(username) {
-  const key = normalizeUsername(username).replace(/[^a-z0-9._-]/g, "_");
-  return `${key}@gielinorcards.app`;
+function looksLikeEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function firebaseErrorToMessage(code) {
   switch (code) {
     case "EMAIL_EXISTS":
-      return "Username already exists.";
+      return "Account already exists.";
     case "EMAIL_NOT_FOUND":
       return "Account not found.";
     case "INVALID_PASSWORD":
       return "Wrong password.";
     case "INVALID_EMAIL":
-      return "Invalid username format.";
+      return "Invalid email address.";
+    case "MISSING_EMAIL":
+      return "Enter an email address.";
     case "TOO_MANY_ATTEMPTS_TRY_LATER":
       return "Too many attempts. Try again later.";
     default:
@@ -56,7 +57,6 @@ async function sha256Hex(input) {
       .map(b => b.toString(16).padStart(2, "0"))
       .join("");
   }
-
   return `plain:${input}`;
 }
 
@@ -100,9 +100,12 @@ function saveFirebaseSession(session) {
 
 function toCloudUser(session) {
   if (!session?.localId) return null;
+  const email = session.email || "";
+  const display = email.includes("@") ? email.split("@")[0] : "Player";
   return {
     id: session.localId,
-    username: session.username || "Player",
+    username: display,
+    email,
     storageNamespace: session.localId,
     legacyNamespaces: session.legacyLocalUserId
       ? [session.legacyLocalUserId]
@@ -110,22 +113,13 @@ function toCloudUser(session) {
   };
 }
 
-async function firebaseAuthRequest(method, email, password) {
-  const endpoint =
-    method === "signup"
-      ? "accounts:signUp"
-      : "accounts:signInWithPassword";
-
+async function firebaseAuthRequest(endpoint, body) {
   const response = await fetch(
     `https://identitytoolkit.googleapis.com/v1/${endpoint}?key=${FIREBASE_API_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        returnSecureToken: true
-      })
+      body: JSON.stringify(body)
     }
   );
 
@@ -147,17 +141,9 @@ export function useAuth() {
     CLOUD_ENABLED ? loadFirebaseSession() : null
   );
 
-  useEffect(() => {
-    saveUsers(users);
-  }, [users]);
-
-  useEffect(() => {
-    saveSession(session);
-  }, [session]);
-
-  useEffect(() => {
-    saveFirebaseSession(firebaseSession);
-  }, [firebaseSession]);
+  useEffect(() => saveUsers(users), [users]);
+  useEffect(() => saveSession(session), [session]);
+  useEffect(() => saveFirebaseSession(firebaseSession), [firebaseSession]);
 
   const localUser = useMemo(() => {
     if (!session) return null;
@@ -174,48 +160,46 @@ export function useAuth() {
     : localUser
       ? {
           id: localUser.id,
-          username: localUser.username,
+          username: localUser.email,
+          email: localUser.email,
           storageNamespace: localUser.id,
           legacyNamespaces: []
         }
       : null;
 
-  async function registerLocal(username, password) {
-    const trimmed = username?.trim();
-    if (!trimmed || !password) {
-      return { ok: false, message: "Enter username and password." };
+  async function registerLocal(email, password) {
+    const normalized = normalizeEmail(email || "");
+    if (!normalized || !password) {
+      return { ok: false, message: "Enter email and password." };
+    }
+    if (!looksLikeEmail(normalized)) {
+      return { ok: false, message: "Enter a valid email." };
     }
 
-    const key = normalizeUsername(trimmed);
-    const exists = users.some(u => u.usernameKey === key);
+    const exists = users.some(u => u.emailKey === normalized);
     if (exists) {
-      return { ok: false, message: "Username already exists." };
+      return { ok: false, message: "Account already exists." };
     }
 
     const passwordHash = await sha256Hex(password);
     const newUser = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      username: trimmed,
-      usernameKey: key,
+      email: normalized,
+      emailKey: normalized,
       passwordHash
     };
-
     setUsers(prev => [...prev, newUser]);
     setSession({ userId: newUser.id });
     return { ok: true };
   }
 
-  async function verifyLocalCredentials(username, password) {
-    const trimmed = username?.trim();
-    if (!trimmed || !password) {
-      return { ok: false, message: "Enter username and password." };
+  async function verifyLocalCredentials(email, password) {
+    const normalized = normalizeEmail(email || "");
+    if (!normalized || !password) {
+      return { ok: false, message: "Enter email and password." };
     }
-
-    const key = normalizeUsername(trimmed);
-    const account = users.find(u => u.usernameKey === key);
-    if (!account) {
-      return { ok: false, message: "Account not found." };
-    }
+    const account = users.find(u => u.emailKey === normalized);
+    if (!account) return { ok: false, message: "Account not found." };
 
     const inputHash = await sha256Hex(password);
     if (inputHash !== account.passwordHash) {
@@ -225,27 +209,28 @@ export function useAuth() {
     return { ok: true, account };
   }
 
-  async function loginLocal(username, password) {
-    const check = await verifyLocalCredentials(username, password);
+  async function loginLocal(email, password) {
+    const check = await verifyLocalCredentials(email, password);
     if (!check.ok) return check;
     setSession({ userId: check.account.id });
     return { ok: true };
   }
 
-  async function registerCloud(username, password) {
-    const trimmed = username?.trim();
-    if (!trimmed || !password) {
-      return { ok: false, message: "Enter username and password." };
+  async function registerCloud(email, password) {
+    const normalized = normalizeEmail(email || "");
+    if (!normalized || !password) {
+      return { ok: false, message: "Enter email and password." };
+    }
+    if (!looksLikeEmail(normalized)) {
+      return { ok: false, message: "Enter a valid email." };
     }
 
-    const usernameKey = normalizeUsername(trimmed);
-    const legacyUser = users.find(u => u.usernameKey === usernameKey) || null;
-
-    const result = await firebaseAuthRequest(
-      "signup",
-      usernameToEmail(trimmed),
-      password
-    );
+    const legacyUser = users.find(u => u.emailKey === normalized) || null;
+    const result = await firebaseAuthRequest("accounts:signUp", {
+      email: normalized,
+      password,
+      returnSecureToken: true
+    });
     if (!result.ok) return result;
 
     const data = result.data || {};
@@ -257,26 +242,27 @@ export function useAuth() {
       idToken: data.idToken,
       refreshToken: data.refreshToken || "",
       localId: data.localId,
-      username: trimmed,
+      email: data.email || normalized,
       legacyLocalUserId: legacyUser?.id || null
     });
     return { ok: true };
   }
 
-  async function loginCloud(username, password) {
-    const trimmed = username?.trim();
-    if (!trimmed || !password) {
-      return { ok: false, message: "Enter username and password." };
+  async function loginCloud(email, password) {
+    const normalized = normalizeEmail(email || "");
+    if (!normalized || !password) {
+      return { ok: false, message: "Enter email and password." };
+    }
+    if (!looksLikeEmail(normalized)) {
+      return { ok: false, message: "Enter a valid email." };
     }
 
-    const usernameKey = normalizeUsername(trimmed);
-    const legacyUser = users.find(u => u.usernameKey === usernameKey) || null;
-
-    const result = await firebaseAuthRequest(
-      "signin",
-      usernameToEmail(trimmed),
-      password
-    );
+    const legacyUser = users.find(u => u.emailKey === normalized) || null;
+    const result = await firebaseAuthRequest("accounts:signInWithPassword", {
+      email: normalized,
+      password,
+      returnSecureToken: true
+    });
     if (!result.ok) return result;
 
     const data = result.data || {};
@@ -288,33 +274,54 @@ export function useAuth() {
       idToken: data.idToken,
       refreshToken: data.refreshToken || "",
       localId: data.localId,
-      username: trimmed,
+      email: data.email || normalized,
       legacyLocalUserId: legacyUser?.id || null
     });
     return { ok: true };
   }
 
-  async function register(username, password) {
-    if (CLOUD_ENABLED) return registerCloud(username, password);
-    return registerLocal(username, password);
+  async function requestPasswordReset(email) {
+    const normalized = normalizeEmail(email || "");
+    if (!normalized) {
+      return { ok: false, message: "Enter your email first." };
+    }
+    if (!looksLikeEmail(normalized)) {
+      return { ok: false, message: "Enter a valid email." };
+    }
+
+    if (!CLOUD_ENABLED) {
+      return { ok: false, message: "Password reset requires cloud auth enabled." };
+    }
+
+    const result = await firebaseAuthRequest("accounts:sendOobCode", {
+      requestType: "PASSWORD_RESET",
+      email: normalized
+    });
+    if (!result.ok) return result;
+    return { ok: true, message: "Password reset email sent." };
   }
 
-  async function login(username, password) {
+  async function register(email, password) {
+    if (CLOUD_ENABLED) return registerCloud(email, password);
+    return registerLocal(email, password);
+  }
+
+  async function login(email, password) {
     if (CLOUD_ENABLED) {
-      const cloudLogin = await loginCloud(username, password);
+      const cloudLogin = await loginCloud(email, password);
       if (cloudLogin.ok) return cloudLogin;
 
-      const localCheck = await verifyLocalCredentials(username, password);
+      const localCheck = await verifyLocalCredentials(email, password);
       if (!localCheck.ok) return cloudLogin;
 
-      const cloudRegister = await registerCloud(username, password);
+      const cloudRegister = await registerCloud(email, password);
       if (cloudRegister.ok) return cloudRegister;
 
-      const retry = await loginCloud(username, password);
+      const retry = await loginCloud(email, password);
       if (retry.ok) return retry;
       return cloudLogin;
     }
-    return loginLocal(username, password);
+    return loginLocal(email, password);
   }
 
   function logout() {
@@ -330,17 +337,13 @@ export function useAuth() {
       window.localStorage.removeItem(USERS_KEY);
       window.localStorage.removeItem(SESSION_KEY);
       window.localStorage.removeItem(FIREBASE_SESSION_KEY);
-
       const keysToDelete = [];
       for (let index = 0; index < window.localStorage.length; index += 1) {
         const key = window.localStorage.key(index);
-        if (key && key.startsWith(GAME_SAVE_PREFIX)) {
-          keysToDelete.push(key);
-        }
+        if (key && key.startsWith(GAME_SAVE_PREFIX)) keysToDelete.push(key);
       }
       keysToDelete.forEach(key => window.localStorage.removeItem(key));
     }
-
     setUsers([]);
     setSession(null);
     setFirebaseSession(null);
@@ -350,6 +353,7 @@ export function useAuth() {
     user,
     login,
     register,
+    requestPasswordReset,
     logout,
     clearAllLocalAccounts,
     cloud: {

@@ -2,15 +2,15 @@ import { useState } from "react";
 
 export default function AuthScreen({ auth }) {
   const [mode, setMode] = useState("login");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
   const submit = async () => {
     const result =
       mode === "login"
-        ? await auth.login(username, password)
-        : await auth.register(username, password);
+        ? await auth.login(email, password)
+        : await auth.register(email, password);
 
     if (!result.ok) {
       setMessage(result.message || "Failed.");
@@ -33,11 +33,11 @@ export default function AuthScreen({ auth }) {
         )}
 
         <label>
-          Username
+          Email
           <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
             }}
@@ -61,6 +61,19 @@ export default function AuthScreen({ auth }) {
         <button type="button" onClick={submit}>
           {mode === "login" ? "Login" : "Create Account"}
         </button>
+
+        {mode === "login" && (
+          <button
+            type="button"
+            className="auth-secondary"
+            onClick={async () => {
+              const result = await auth.requestPasswordReset(email);
+              setMessage(result.message || (result.ok ? "Reset email sent." : "Failed."));
+            }}
+          >
+            Forgot Password
+          </button>
+        )}
 
         <button
           type="button"
