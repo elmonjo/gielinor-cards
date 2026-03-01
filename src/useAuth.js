@@ -185,7 +185,7 @@ export function useAuth() {
     return { ok: true };
   }
 
-  async function loginLocal(username, password) {
+  async function verifyLocalCredentials(username, password) {
     const trimmed = username?.trim();
     if (!trimmed || !password) {
       return { ok: false, message: "Enter username and password." };
@@ -202,6 +202,13 @@ export function useAuth() {
       return { ok: false, message: "Wrong password." };
     }
 
+    return { ok: true, account };
+  }
+
+  async function loginLocal(username, password) {
+    const check = await verifyLocalCredentials(username, password);
+    if (!check.ok) return check;
+    const account = check.account;
     setSession({ userId: account.id });
     return { ok: true };
   }
@@ -272,7 +279,23 @@ export function useAuth() {
   }
 
   async function login(username, password) {
-    if (CLOUD_ENABLED) return loginCloud(username, password);
+    if (CLOUD_ENABLED) {
+      const cloudLogin = await loginCloud(username, password);
+      if (cloudLogin.ok) return cloudLogin;
+
+      // Migration path: allow existing local account holders to use Login directly.
+      const localCheck = await verifyLocalCredentials(username, password);
+      if (!localCheck.ok) return cloudLogin;
+
+      const cloudRegister = await registerCloud(username, password);
+      if (cloudRegister.ok) return cloudRegister;
+
+      // If account already exists in cloud, retry cloud login once.
+      const retry = await loginCloud(username, password);
+      if (retry.ok) return retry;
+
+      return cloudLogin;
+    }
     return loginLocal(username, password);
   }
 
