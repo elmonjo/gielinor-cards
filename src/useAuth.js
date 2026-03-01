@@ -22,7 +22,7 @@ function normalizeUsername(username) {
 
 function usernameToEmail(username) {
   const key = normalizeUsername(username).replace(/[^a-z0-9._-]/g, "_");
-  return `${key}@gielinor.cards.local`;
+  return `${key}@gielinorcards.app`;
 }
 
 async function sha256Hex(input) {
