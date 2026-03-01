@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { cards as allCards } from "../database/cardCatalog";
 
 export default function BurgerOverlay({ game, auth }) {
   const [newProfileName, setNewProfileName] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [transferMessage, setTransferMessage] = useState("");
+  const importInputRef = useRef(null);
 
   const collectedUnique = new Set([
     ...game.tableCards.map(c => c.id),
@@ -26,6 +28,19 @@ export default function BurgerOverlay({ game, auth }) {
         {auth?.user && (
           <div className="overlay-debug-note">
             Logged in as <strong>{auth.user.username}</strong>
+          </div>
+        )}
+        {game.cloudStatus?.enabled && (
+          <div className="overlay-debug-note">
+            Cloud sync:{" "}
+            <strong>
+              {game.cloudStatus.error
+                ? "Issue"
+                : game.cloudStatus.ready
+                  ? "Connected"
+                  : "Connecting"}
+            </strong>
+            {game.cloudStatus.error ? ` (${game.cloudStatus.error})` : ""}
           </div>
         )}
 
@@ -117,6 +132,35 @@ export default function BurgerOverlay({ game, auth }) {
 
           <button
             type="button"
+            onClick={() => {
+              const payload = game.exportProfileSession();
+              const blob = new Blob(
+                [JSON.stringify(payload, null, 2)],
+                { type: "application/json" }
+              );
+              const url = URL.createObjectURL(blob);
+              const anchor = document.createElement("a");
+              anchor.href = url;
+              anchor.download = `gielinor-save-${new Date().toISOString().slice(0, 10)}.json`;
+              document.body.appendChild(anchor);
+              anchor.click();
+              anchor.remove();
+              URL.revokeObjectURL(url);
+              setTransferMessage("Save exported.");
+            }}
+          >
+            Export Save
+          </button>
+
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+          >
+            Import Save
+          </button>
+
+          <button
+            type="button"
             onClick={() => setRulesOpen(true)}
           >
             Rules
@@ -139,6 +183,28 @@ export default function BurgerOverlay({ game, auth }) {
             Close Menu
           </button>
         </div>
+        {transferMessage && (
+          <div className="overlay-debug-note">{transferMessage}</div>
+        )}
+        <input
+          ref={importInputRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: "none" }}
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const parsed = JSON.parse(text);
+              const result = game.importProfileSession(parsed);
+              setTransferMessage(result.message || (result.ok ? "Import complete." : "Import failed."));
+            } catch {
+              setTransferMessage("Invalid save file.");
+            }
+          }}
+        />
 
         {rulesOpen && (
           <div

@@ -28,6 +28,9 @@ export default function AuthScreen({ auth }) {
         <div className="auth-subtitle">
           {mode === "login" ? "Sign In" : "Create Account"}
         </div>
+        {auth?.cloud?.enabled && (
+          <div className="auth-subtitle">Cloud sync enabled</div>
+        )}
 
         <label>
           Username
@@ -75,4 +78,3 @@ export default function AuthScreen({ auth }) {
     </div>
   );
 }
-

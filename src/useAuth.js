@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const USERS_KEY = "gielinor_auth_users_v1";
 const SESSION_KEY = "gielinor_auth_session_v1";
+const CLOUD_SESSION_KEY = "gielinor_auth_cloud_session_v1";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim() || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || "";
+const CLOUD_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 function safeParse(value, fallback) {
   try {
@@ -13,6 +18,11 @@ function safeParse(value, fallback) {
 
 function normalizeUsername(username) {
   return username.trim().toLowerCase();
+}
+
+function usernameToEmail(username) {
+  const key = normalizeUsername(username).replace(/[^a-z0-9._-]/g, "_");
+  return `${key}@gielinor.cards.local`;
 }
 
 async function sha256Hex(input) {
@@ -56,9 +66,66 @@ function saveSession(session) {
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
+function loadCloudSession() {
+  if (typeof window === "undefined") return null;
+  return safeParse(window.localStorage.getItem(CLOUD_SESSION_KEY), null);
+}
+
+function saveCloudSession(session) {
+  if (typeof window === "undefined") return;
+  if (!session) {
+    window.localStorage.removeItem(CLOUD_SESSION_KEY);
+    return;
+  }
+  window.localStorage.setItem(CLOUD_SESSION_KEY, JSON.stringify(session));
+}
+
+function toCloudUser(session) {
+  const user = session?.user;
+  if (!user?.id) return null;
+
+  const username =
+    user.user_metadata?.username ||
+    user.email?.split("@")[0] ||
+    "Player";
+
+  return {
+    id: user.id,
+    username,
+    storageNamespace: user.id,
+    legacyNamespaces: session.legacyLocalUserId
+      ? [session.legacyLocalUserId]
+      : []
+  };
+}
+
+async function supabaseAuthRequest(path, body) {
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return {
+      ok: false,
+      message: json?.msg || json?.error_description || json?.message || "Auth request failed."
+    };
+  }
+
+  return { ok: true, data: json };
+}
+
 export function useAuth() {
   const [users, setUsers] = useState(() => loadUsers());
   const [session, setSession] = useState(() => loadSession());
+  const [cloudSession, setCloudSession] = useState(() =>
+    CLOUD_ENABLED ? loadCloudSession() : null
+  );
 
   useEffect(() => {
     saveUsers(users);
@@ -68,12 +135,32 @@ export function useAuth() {
     saveSession(session);
   }, [session]);
 
-  const user =
-    session && users.find(u => u.id === session.userId)
-      ? users.find(u => u.id === session.userId)
+  useEffect(() => {
+    saveCloudSession(cloudSession);
+  }, [cloudSession]);
+
+  const localUser = useMemo(() => {
+    if (!session) return null;
+    return users.find(u => u.id === session.userId) || null;
+  }, [session, users]);
+
+  const cloudUser = useMemo(() => {
+    if (!CLOUD_ENABLED) return null;
+    return toCloudUser(cloudSession);
+  }, [cloudSession]);
+
+  const user = CLOUD_ENABLED
+    ? cloudUser
+    : localUser
+      ? {
+          id: localUser.id,
+          username: localUser.username,
+          storageNamespace: localUser.id,
+          legacyNamespaces: []
+        }
       : null;
 
-  async function register(username, password) {
+  async function registerLocal(username, password) {
     const trimmed = username?.trim();
     if (!trimmed || !password) {
       return { ok: false, message: "Enter username and password." };
@@ -98,7 +185,7 @@ export function useAuth() {
     return { ok: true };
   }
 
-  async function login(username, password) {
+  async function loginLocal(username, password) {
     const trimmed = username?.trim();
     if (!trimmed || !password) {
       return { ok: false, message: "Enter username and password." };
@@ -119,7 +206,81 @@ export function useAuth() {
     return { ok: true };
   }
 
+  async function registerCloud(username, password) {
+    const trimmed = username?.trim();
+    if (!trimmed || !password) {
+      return { ok: false, message: "Enter username and password." };
+    }
+
+    const usernameKey = normalizeUsername(trimmed);
+    const legacyUser = users.find(u => u.usernameKey === usernameKey) || null;
+
+    const result = await supabaseAuthRequest("/auth/v1/signup", {
+      email: usernameToEmail(trimmed),
+      password,
+      data: { username: trimmed }
+    });
+    if (!result.ok) return result;
+
+    const data = result.data || {};
+    if (!data.access_token || !data.user?.id) {
+      return {
+        ok: false,
+        message: "Signup created but no session was returned. Disable email confirmation in Supabase Auth settings."
+      };
+    }
+
+    setCloudSession({
+      ...data,
+      legacyLocalUserId: legacyUser?.id || null
+    });
+
+    return { ok: true };
+  }
+
+  async function loginCloud(username, password) {
+    const trimmed = username?.trim();
+    if (!trimmed || !password) {
+      return { ok: false, message: "Enter username and password." };
+    }
+
+    const usernameKey = normalizeUsername(trimmed);
+    const legacyUser = users.find(u => u.usernameKey === usernameKey) || null;
+
+    const result = await supabaseAuthRequest("/auth/v1/token?grant_type=password", {
+      email: usernameToEmail(trimmed),
+      password
+    });
+    if (!result.ok) return result;
+
+    const data = result.data || {};
+    if (!data.access_token || !data.user?.id) {
+      return { ok: false, message: "Login failed (no session returned)." };
+    }
+
+    setCloudSession({
+      ...data,
+      legacyLocalUserId: legacyUser?.id || null
+    });
+
+    return { ok: true };
+  }
+
+  async function register(username, password) {
+    if (CLOUD_ENABLED) return registerCloud(username, password);
+    return registerLocal(username, password);
+  }
+
+  async function login(username, password) {
+    if (CLOUD_ENABLED) return loginCloud(username, password);
+    return loginLocal(username, password);
+  }
+
   function logout() {
+    if (CLOUD_ENABLED) {
+      setCloudSession(null);
+      return;
+    }
     setSession(null);
   }
 
@@ -127,7 +288,13 @@ export function useAuth() {
     user,
     login,
     register,
-    logout
+    logout,
+    cloud: {
+      enabled: CLOUD_ENABLED,
+      url: SUPABASE_URL,
+      anonKey: SUPABASE_ANON_KEY,
+      accessToken: cloudSession?.access_token || null,
+      userId: cloudSession?.user?.id || null
+    }
   };
 }
-

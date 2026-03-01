@@ -25,7 +25,11 @@ export default function App() {
 }
 
 function GameApp({ auth }) {
-  const game = useGameState(auth.user.id);
+  const game = useGameState({
+    storageNamespace: auth.user.storageNamespace || auth.user.id,
+    legacyNamespaces: auth.user.legacyNamespaces || [],
+    cloud: auth.cloud
+  });
 
   return (
     <div className="app">
