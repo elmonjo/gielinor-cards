@@ -560,10 +560,33 @@ export function useGameState(options = "default") {
   function debugDeleteCardById(cardId) {
     const id = cardId?.trim();
     if (!id) return false;
-    const exists =
-      tableCards.some(card => card.id === id) ||
-      binderCards.some(card => card.id === id);
+    const removed = [
+      ...tableCards.filter(card => card.id === id),
+      ...binderCards.filter(card => card.id === id)
+    ];
+    const exists = removed.length > 0;
     if (!exists) return false;
+
+    setPackPools(prev => {
+      const next = { ...prev };
+      const seen = new Set();
+
+      removed.forEach(card => {
+        if (!card?.id || seen.has(card.id)) return;
+        seen.add(card.id);
+
+        const template = cards.find(c => c.id === card.id) || card;
+        const poolKey = resolvePackPoolKey(template.path, next);
+        const currentPool = Array.isArray(next[poolKey]) ? next[poolKey] : [];
+        const alreadyInPool = currentPool.some(c => c.id === template.id);
+        if (!alreadyInPool) {
+          next[poolKey] = [...currentPool, template];
+        }
+      });
+
+      return next;
+    });
+
     setTableCards(prev => prev.filter(card => card.id !== id));
     setBinderCards(prev => prev.filter(card => card.id !== id));
     return true;
