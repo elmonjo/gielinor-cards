@@ -5,6 +5,8 @@ export default function BurgerOverlay({ game, auth }) {
   const [newProfileName, setNewProfileName] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
   const [transferMessage, setTransferMessage] = useState("");
+  const [adminCardId, setAdminCardId] = useState("");
+  const [adminMessage, setAdminMessage] = useState("");
   const importInputRef = useRef(null);
 
   const collectedUnique = new Set([
@@ -119,6 +121,48 @@ export default function BurgerOverlay({ game, auth }) {
           </div>
         </div>
 
+        <div className="overlay-profile-tools">
+          <label>
+            Card ID Admin
+            <input
+              type="text"
+              placeholder="e.g. ironman_armour_set"
+              value={adminCardId}
+              onChange={(e) => setAdminCardId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const ok = game.debugSpawnCardById(adminCardId);
+                  setAdminMessage(ok ? "Card spawned." : "Card ID not found.");
+                }
+              }}
+            />
+          </label>
+          <div className="overlay-create-profile">
+            <button
+              type="button"
+              onClick={() => {
+                const ok = game.debugSpawnCardById(adminCardId);
+                setAdminMessage(ok ? "Card spawned." : "Card ID not found.");
+              }}
+            >
+              Spawn
+            </button>
+            <button
+              type="button"
+              className="overlay-delete-profile"
+              onClick={() => {
+                const ok = game.debugDeleteCardById(adminCardId);
+                setAdminMessage(ok ? "Card deleted from table/collection." : "No matching card on table/collection.");
+              }}
+            >
+              Delete
+            </button>
+          </div>
+          {adminMessage && (
+            <div className="overlay-debug-note">{adminMessage}</div>
+          )}
+        </div>
+
         <div className="overlay-actions">
           {auth?.user && (
             <button
@@ -129,6 +173,20 @@ export default function BurgerOverlay({ game, auth }) {
               Log Out
             </button>
           )}
+
+          <button
+            type="button"
+            className="overlay-delete-profile"
+            onClick={() => {
+              const ok = window.confirm(
+                "Delete all local login accounts and local saves on this device?"
+              );
+              if (!ok) return;
+              auth.clearAllLocalAccounts();
+            }}
+          >
+            Reset All Accounts
+          </button>
 
           <button
             type="button"

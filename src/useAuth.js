@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 const USERS_KEY = "gielinor_auth_users_v1";
 const SESSION_KEY = "gielinor_auth_session_v1";
 const CLOUD_SESSION_KEY = "gielinor_auth_cloud_session_v1";
+const GAME_SAVE_PREFIX = "gielinor_runtime_profiles_v1:";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim() || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || "";
@@ -307,11 +308,33 @@ export function useAuth() {
     setSession(null);
   }
 
+  function clearAllLocalAccounts() {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(USERS_KEY);
+      window.localStorage.removeItem(SESSION_KEY);
+      window.localStorage.removeItem(CLOUD_SESSION_KEY);
+
+      const keysToDelete = [];
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        if (key && key.startsWith(GAME_SAVE_PREFIX)) {
+          keysToDelete.push(key);
+        }
+      }
+      keysToDelete.forEach(key => window.localStorage.removeItem(key));
+    }
+
+    setUsers([]);
+    setSession(null);
+    setCloudSession(null);
+  }
+
   return {
     user,
     login,
     register,
     logout,
+    clearAllLocalAccounts,
     cloud: {
       enabled: CLOUD_ENABLED,
       url: SUPABASE_URL,

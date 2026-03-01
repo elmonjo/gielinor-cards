@@ -711,6 +711,20 @@ export function useGameState(options = "default") {
     return true;
   }
 
+  function debugDeleteCardById(cardId) {
+    const id = cardId?.trim();
+    if (!id) return false;
+
+    const exists =
+      tableCards.some(card => card.id === id) ||
+      binderCards.some(card => card.id === id);
+    if (!exists) return false;
+
+    setTableCards(prev => prev.filter(card => card.id !== id));
+    setBinderCards(prev => prev.filter(card => card.id !== id));
+    return true;
+  }
+
   function exportProfileSession() {
     return {
       exportVersion: 1,
@@ -770,6 +784,7 @@ export function useGameState(options = "default") {
     debugRefillPacks,
     debugResetTableLayout,
     debugSpawnCardById,
+    debugDeleteCardById,
     exportProfileSession,
     importProfileSession,
     cloudStatus: {
