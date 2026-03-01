@@ -187,32 +187,39 @@ export default function Binder({ game }) {
                         : `${card.title} (not collected yet)`
                     }
                   >
-                    <div
-                      className={`gc-card ${card.shiny ? "shiny-card" : ""}`}
-                    >
-                      <div className="gc-head">
-                        <div className="gc-title">{card.title}</div>
-                        {card.subtitle && (
-                          <div className="gc-subtitle">
-                            {card.subtitle}
+                    {owned ? (
+                      <div
+                        className={`gc-card ${card.shiny ? "shiny-card" : ""}`}
+                      >
+                        <div className="gc-head">
+                          <div className="gc-title">{card.title}</div>
+                          {card.subtitle && (
+                            <div className="gc-subtitle">
+                              {card.subtitle}
+                            </div>
+                          )}
+                        </div>
+                        {card.image && (
+                          <div className="gc-art-wrap">
+                            <img
+                              className={`gc-art ${card.type === "skill" ? "gc-art--skill" : ""} ${card.type === "quest" ? "gc-art--quest" : ""} ${card.type === "diary" ? "gc-art--diary" : ""}`}
+                              src={card.image}
+                              alt={card.title}
+                              draggable="false"
+                              onError={(e) => {
+                                if (e.currentTarget.src.endsWith("/card-images/quest_icon.png")) return;
+                                e.currentTarget.src = "/card-images/quest_icon.png";
+                              }}
+                            />
                           </div>
                         )}
                       </div>
-                      {card.image && (
-                        <div className="gc-art-wrap">
-                          <img
-                            className={`gc-art ${card.type === "skill" ? "gc-art--skill" : ""} ${card.type === "quest" ? "gc-art--quest" : ""} ${card.type === "diary" ? "gc-art--diary" : ""}`}
-                            src={card.image}
-                            alt={card.title}
-                            draggable="false"
-            onError={(e) => {
-              if (e.currentTarget.src.endsWith("/card-images/quest_icon.png")) return;
-              e.currentTarget.src = "/card-images/quest_icon.png";
-            }}
-          />
-                        </div>
-                      )}
-                    </div>
+                    ) : (
+                      <div className="gc-card binder-card-back">
+                        <div className="binder-card-back-title">Gielinor</div>
+                        <div className="binder-card-back-subtitle">Cards</div>
+                      </div>
+                    )}
 
                     {ownedInstances.length > 1 && (
                       <div className="binder-count">

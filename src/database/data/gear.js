@@ -1,13 +1,11 @@
 ﻿export const gearCardsData = [
   // Gear
-  { id:"bronze_scimitar", title:"Bronze Weapons", type:"gear", rarity:"common", path:"Novice", shiny:false , image:"/card-images/bronze_scimitar.png"},
   { id:"iron_scimitar", title:"Iron Weapons", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/iron_scimitar.png" },
   { id:"willow_shortbow", title:"Willow Shortbow", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/willow_shortbow.png" },
   { id:"staff_of_air", title:"Staff of Air", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/staff_of_air.png" },
   { id:"staff_of_water", title:"Staff of Water", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/staff_of_water.png" },
   { id:"staff_of_earth", title:"Staff of Earth", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/staff_of_earth.png" },
   { id:"staff_of_fire", title:"Staff of Fire", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/staff_of_fire.png" },
-  { id:"bronze_armour_set", title:"Bronze Armour Set", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/bronze_armour_set.png" },
   { id:"iron_armour_set", title:"Iron Armour Set", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/iron_armour_set.png" },
   { id:"steel_armour_set", title:"Steel Armour Set", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/steel_armour_set.png" },
   { id:"ironman_armour_set", title:"Ironman Armour Set", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/ironman_armour_set.png" },
