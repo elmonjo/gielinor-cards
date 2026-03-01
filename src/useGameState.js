@@ -288,15 +288,45 @@ export function useGameState(options = "default") {
 
     const clampCardsToViewport = () => {
       const table = document.querySelector(".table");
-      const { width: cardWidth } = getRuntimeCardSize();
+      const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
       const tableWidth = table?.clientWidth || window.innerWidth;
+      const tableHeight = table?.clientHeight || Math.max(window.innerHeight, 700);
       const maxX = Math.max(0, tableWidth - cardWidth);
+      const maxY = Math.max(20, tableHeight - cardHeight - 20);
+      const isSmallTouch =
+        window.matchMedia("(hover: none) and (pointer: coarse)").matches &&
+        window.innerWidth <= 740;
 
       setTableCards(prev => {
         let changed = false;
+
+        // Reflow synced desktop layouts into a compact mobile grid.
+        if (isSmallTouch && prev.length > 0) {
+          const xs = prev.map(card => card.x ?? 0);
+          const ys = prev.map(card => card.y ?? 20);
+          const spanX = Math.max(...xs) - Math.min(...xs);
+          const spanY = Math.max(...ys) - Math.min(...ys);
+          const needsReflow = spanX > tableWidth || spanY > tableHeight;
+
+          if (needsReflow) {
+            const gapX = 10;
+            const gapY = 14;
+            const columns = Math.max(1, Math.floor((tableWidth - 12) / (cardWidth + gapX)));
+            const rowWidth = columns * cardWidth + (columns - 1) * gapX;
+            const startX = Math.max(0, Math.floor((tableWidth - rowWidth) / 2));
+            const startY = 260;
+
+            return prev.map((card, index) => ({
+              ...card,
+              x: Math.min(maxX, Math.max(0, startX + (index % columns) * (cardWidth + gapX))),
+              y: Math.min(maxY, Math.max(20, startY + Math.floor(index / columns) * (cardHeight + gapY)))
+            }));
+          }
+        }
+
         const next = prev.map(card => {
           const clampedX = Math.min(Math.max(card.x ?? 0, 0), maxX);
-          const clampedY = Math.max(20, card.y ?? 20);
+          const clampedY = Math.min(maxY, Math.max(20, card.y ?? 20));
           if (clampedX !== card.x || clampedY !== card.y) {
             changed = true;
             return { ...card, x: clampedX, y: clampedY };
