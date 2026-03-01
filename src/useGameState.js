@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cards } from "./database/cardCatalog";
 
 const STORAGE_KEY_PREFIX = "gielinor_runtime_profiles_v1";
-const CLOUD_TABLE = "user_game_state";
 
 const PACKS = [
   { name: "Novice", cost: 5000 },
@@ -22,15 +21,10 @@ const LEGACY_PATH_MAP = {
 
 function resolvePackPoolKey(packName, pools) {
   if (Array.isArray(pools?.[packName])) return packName;
-
   const legacyKey = Object.keys(LEGACY_PATH_MAP).find(
     oldName => LEGACY_PATH_MAP[oldName] === packName
   );
-
-  if (legacyKey && Array.isArray(pools?.[legacyKey])) {
-    return legacyKey;
-  }
-
+  if (legacyKey && Array.isArray(pools?.[legacyKey])) return legacyKey;
   return packName;
 }
 
@@ -43,32 +37,22 @@ function shuffle(items) {
 }
 
 function getRuntimeCardSize() {
-  if (typeof window === "undefined") {
-    return { width: 130, height: 190 };
-  }
-
+  if (typeof window === "undefined") return { width: 130, height: 190 };
   const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-  return isTouchDevice
-    ? { width: 60, height: 88 }
-    : { width: 130, height: 190 };
+  return isTouchDevice ? { width: 60, height: 88 } : { width: 130, height: 190 };
 }
 
 function createCardInstances(cardList) {
-  const { width: CARD_WIDTH } = getRuntimeCardSize();
-  const GAP = 20;
-  const viewportWidth =
-    typeof window !== "undefined" ? window.innerWidth : 1200;
-
-  const totalWidth =
-    cardList.length * CARD_WIDTH +
-    (cardList.length - 1) * GAP;
-
+  const { width: cardWidth } = getRuntimeCardSize();
+  const gap = 20;
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const totalWidth = cardList.length * cardWidth + (cardList.length - 1) * gap;
   const startX = (viewportWidth - totalWidth) / 2;
 
   return cardList.map((card, index) => ({
     ...card,
     instanceId: crypto.randomUUID(),
-    x: startX + index * (CARD_WIDTH + GAP),
+    x: startX + index * (cardWidth + gap),
     y: 260,
     previewSnap: false,
     zIndex: 1
@@ -77,11 +61,9 @@ function createCardInstances(cardList) {
 
 function createBasePackPools() {
   const pools = {};
-
   PACKS.forEach(pack => {
     pools[pack.name] = cards.filter(c => c.path === pack.name);
   });
-
   return pools;
 }
 
@@ -91,14 +73,12 @@ function normalizePackPools(packPools) {
   }
 
   const normalized = {};
-
   PACKS.forEach(pack => {
     const current = packPools[pack.name];
     if (Array.isArray(current)) {
       normalized[pack.name] = current;
       return;
     }
-
     const legacyKey = Object.keys(LEGACY_PATH_MAP).find(
       oldName => LEGACY_PATH_MAP[oldName] === pack.name
     );
@@ -112,7 +92,6 @@ function normalizePackPools(packPools) {
       normalized[pack.name] = fallback[pack.name];
     }
   });
-
   return normalized;
 }
 
@@ -129,15 +108,14 @@ function createInitialRunState() {
     .map(id => cards.find(card => card.id === id))
     .filter(Boolean);
 
-  const noviceSkills = shuffle(
-    packPools.Novice.filter(card => card.type === "skill")
-  );
+  const noviceSkills = shuffle(packPools.Novice.filter(card => card.type === "skill"));
   const skillStarter = noviceSkills.slice(0, 3);
   const starterOptions = [...guaranteedStarters, ...skillStarter];
 
-  packPools.Novice = packPools.Novice.filter(card =>
-    !guaranteedStarters.some(s => s.id === card.id) &&
-    !skillStarter.some(s => s.id === card.id)
+  packPools.Novice = packPools.Novice.filter(
+    card =>
+      !guaranteedStarters.some(s => s.id === card.id) &&
+      !skillStarter.some(s => s.id === card.id)
   );
 
   return {
@@ -147,10 +125,7 @@ function createInitialRunState() {
     packPools,
     zCounter: 1,
     starterRevealState: starterOptions.length > 0
-      ? {
-          packName: "Novice Starter Pack",
-          options: starterOptions
-        }
+      ? { packName: "Novice Starter Pack", options: starterOptions }
       : null
   };
 }
@@ -169,8 +144,7 @@ function loadProfileSessionFromKeys(storageKeys) {
     return {
       profiles: [fallback],
       activeProfileId: fallback.id,
-      activeState: fallback.state,
-      sourceKey: storageKeys[0]
+      activeState: fallback.state
     };
   }
 
@@ -178,25 +152,15 @@ function loadProfileSessionFromKeys(storageKeys) {
     try {
       const raw = window.localStorage.getItem(storageKey);
       if (!raw) continue;
-
       const parsed = JSON.parse(raw);
-      const profiles = Array.isArray(parsed?.profiles)
-        ? parsed.profiles
-        : [];
-
-      if (profiles.length === 0) continue;
-
-      const activeProfileId =
-        parsed.activeProfileId || profiles[0].id;
-
-      const activeProfile =
-        profiles.find(p => p.id === activeProfileId) || profiles[0];
-
+      const profiles = Array.isArray(parsed?.profiles) ? parsed.profiles : [];
+      if (!profiles.length) continue;
+      const activeProfileId = parsed.activeProfileId || profiles[0].id;
+      const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
       return {
         profiles,
         activeProfileId: activeProfile.id,
-        activeState: activeProfile.state,
-        sourceKey: storageKey
+        activeState: activeProfile.state
       };
     } catch {
       continue;
@@ -207,16 +171,12 @@ function loadProfileSessionFromKeys(storageKeys) {
   return {
     profiles: [fallback],
     activeProfileId: fallback.id,
-    activeState: fallback.state,
-    sourceKey: storageKeys[0]
+    activeState: fallback.state
   };
 }
 
 function normalizeImportedProfiles(payload) {
-  const importedProfiles = Array.isArray(payload?.profiles)
-    ? payload.profiles
-    : [];
-
+  const importedProfiles = Array.isArray(payload?.profiles) ? payload.profiles : [];
   const normalizedProfiles = importedProfiles
     .filter(profile => profile && typeof profile === "object")
     .map((profile, index) => ({
@@ -234,19 +194,13 @@ function normalizeImportedProfiles(payload) {
           : createInitialRunState()
     }));
 
-  if (normalizedProfiles.length === 0) {
-    return null;
-  }
-
+  if (!normalizedProfiles.length) return null;
   const requestedActiveId =
     typeof payload?.activeProfileId === "string"
       ? payload.activeProfileId
       : normalizedProfiles[0].id;
-
   const activeProfile =
-    normalizedProfiles.find(p => p.id === requestedActiveId) ||
-    normalizedProfiles[0];
-
+    normalizedProfiles.find(p => p.id === requestedActiveId) || normalizedProfiles[0];
   return {
     profiles: normalizedProfiles,
     activeProfileId: activeProfile.id,
@@ -254,37 +208,38 @@ function normalizeImportedProfiles(payload) {
   };
 }
 
-async function fetchCloudSession(cloud) {
-  const response = await fetch(
-    `${cloud.url}/rest/v1/${CLOUD_TABLE}?user_id=eq.${cloud.userId}&select=state&limit=1`,
-    {
-      headers: {
-        apikey: cloud.anonKey,
-        Authorization: `Bearer ${cloud.accessToken}`
-      }
-    }
-  );
+function normalizeCloudConfig(cloud) {
+  return {
+    enabled: Boolean(cloud?.enabled),
+    databaseUrl: cloud?.databaseUrl || "",
+    accessToken: cloud?.accessToken || "",
+    userId: cloud?.userId || ""
+  };
+}
 
+function isCloudReadyConfig(cloud) {
+  return Boolean(cloud.enabled && cloud.databaseUrl && cloud.accessToken && cloud.userId);
+}
+
+function cloudDepKey(cloud) {
+  return JSON.stringify([cloud.enabled, cloud.databaseUrl, cloud.accessToken, cloud.userId]);
+}
+
+function cloudUrl(cloud) {
+  return `${cloud.databaseUrl.replace(/\/$/, "")}/user_game_state/${cloud.userId}.json?auth=${encodeURIComponent(cloud.accessToken)}`;
+}
+
+async function fetchCloudSession(cloud) {
+  const response = await fetch(cloudUrl(cloud));
   if (!response.ok) return null;
-  const rows = await response.json().catch(() => []);
-  return Array.isArray(rows) && rows.length > 0 ? rows[0]?.state || null : null;
+  return await response.json().catch(() => null);
 }
 
 async function saveCloudSession(cloud, payload) {
-  await fetch(`${cloud.url}/rest/v1/${CLOUD_TABLE}?on_conflict=user_id`, {
-    method: "POST",
-    headers: {
-      apikey: cloud.anonKey,
-      Authorization: `Bearer ${cloud.accessToken}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates"
-    },
-    body: JSON.stringify([
-      {
-        user_id: cloud.userId,
-        state: payload
-      }
-    ])
+  await fetch(cloudUrl(cloud), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
   });
 }
 
@@ -303,14 +258,8 @@ export function useGameState(options = "default") {
     ns => `${STORAGE_KEY_PREFIX}:${ns}`
   );
   const allStorageKeys = [storageKey, ...legacyStorageKeys];
-
-  const cloudEnabled = Boolean(
-    normalizedOptions.cloud?.enabled &&
-    normalizedOptions.cloud?.url &&
-    normalizedOptions.cloud?.anonKey &&
-    normalizedOptions.cloud?.accessToken &&
-    normalizedOptions.cloud?.userId
-  );
+  const cloudConfig = normalizeCloudConfig(normalizedOptions.cloud);
+  const cloudEnabled = isCloudReadyConfig(cloudConfig);
 
   const session = useMemo(
     () => loadProfileSessionFromKeys(allStorageKeys),
@@ -318,29 +267,18 @@ export function useGameState(options = "default") {
   );
 
   const [profiles, setProfiles] = useState(session.profiles);
-  const [activeProfileId, setActiveProfileId] = useState(
-    session.activeProfileId
-  );
-
+  const [activeProfileId, setActiveProfileId] = useState(session.activeProfileId);
   const [draftState, setDraftState] = useState(null);
   const [starterRevealState, setStarterRevealState] = useState(
     session.activeState.starterRevealState || null
   );
-  const [tableCards, setTableCards] = useState(
-    session.activeState.tableCards || []
-  );
-  const [binderCards, setBinderCards] = useState(
-    session.activeState.binderCards || []
-  );
+  const [tableCards, setTableCards] = useState(session.activeState.tableCards || []);
+  const [binderCards, setBinderCards] = useState(session.activeState.binderCards || []);
   const [gp, setGp] = useState(session.activeState.gp || 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [binderOpen, setBinderOpen] = useState(false);
-  const [zCounter, setZCounter] = useState(
-    session.activeState.zCounter || 1
-  );
-  const [packPools, setPackPools] = useState(
-    normalizePackPools(session.activeState.packPools)
-  );
+  const [zCounter, setZCounter] = useState(session.activeState.zCounter || 1);
+  const [packPools, setPackPools] = useState(normalizePackPools(session.activeState.packPools));
   const [cloudReady, setCloudReady] = useState(!cloudEnabled);
   const [cloudSyncError, setCloudSyncError] = useState("");
   const lastCloudPayloadRef = useRef("");
@@ -356,31 +294,20 @@ export function useGameState(options = "default") {
 
       setTableCards(prev => {
         let changed = false;
-
         const next = prev.map(card => {
           const clampedX = Math.min(Math.max(card.x ?? 0, 0), maxX);
           const clampedY = Math.max(20, card.y ?? 20);
-
           if (clampedX !== card.x || clampedY !== card.y) {
             changed = true;
-            return {
-              ...card,
-              x: clampedX,
-              y: clampedY
-            };
+            return { ...card, x: clampedX, y: clampedY };
           }
-
           return card;
         });
-
         return changed ? next : prev;
       });
     };
 
-    const handleResize = () => {
-      window.requestAnimationFrame(clampCardsToViewport);
-    };
-
+    const handleResize = () => window.requestAnimationFrame(clampCardsToViewport);
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleResize);
     handleResize();
@@ -413,9 +340,8 @@ export function useGameState(options = "default") {
       }
 
       try {
-        const remoteState = await fetchCloudSession(normalizedOptions.cloud);
+        const remoteState = await fetchCloudSession(cloudConfig);
         if (canceled) return;
-
         if (remoteState) {
           const normalized = normalizeImportedProfiles(remoteState);
           if (normalized) {
@@ -430,29 +356,19 @@ export function useGameState(options = "default") {
           setCloudSyncError("Cloud sync unavailable, using local save.");
         }
       } finally {
-        if (!canceled) {
-          setCloudReady(true);
-        }
+        if (!canceled) setCloudReady(true);
       }
     }
 
     hydrateFromCloud();
-
     return () => {
       canceled = true;
     };
-  }, [
-    cloudEnabled,
-    normalizedOptions.cloud?.url,
-    normalizedOptions.cloud?.anonKey,
-    normalizedOptions.cloud?.accessToken,
-    normalizedOptions.cloud?.userId
-  ]);
+  }, [cloudEnabled, cloudDepKey(cloudConfig)]);
 
   function selectProfile(profileId) {
     const selected = profiles.find(p => p.id === profileId);
     if (!selected) return;
-
     setActiveProfileId(selected.id);
     hydrateProfileState(clone(selected.state));
   }
@@ -460,9 +376,7 @@ export function useGameState(options = "default") {
   function createNewProfile(profileName) {
     const name = profileName?.trim();
     if (!name) return;
-
     const newProfile = createProfile(name);
-
     setProfiles(prev => [...prev, newProfile]);
     setActiveProfileId(newProfile.id);
     hydrateProfileState(clone(newProfile.state));
@@ -472,77 +386,46 @@ export function useGameState(options = "default") {
     setProfiles(prev => {
       const exists = prev.some(p => p.id === profileId);
       if (!exists) return prev;
-
       const remaining = prev.filter(p => p.id !== profileId);
-
-      if (remaining.length === 0) {
+      if (!remaining.length) {
         const fallback = createProfile("Main");
         setActiveProfileId(fallback.id);
         hydrateProfileState(clone(fallback.state));
         return [fallback];
       }
-
       if (activeProfileId === profileId) {
         const next = remaining[0];
         setActiveProfileId(next.id);
         hydrateProfileState(clone(next.state));
       }
-
       return remaining;
     });
   }
 
   useEffect(() => {
     if (!activeProfileId) return;
-
-    const runtimeState = {
-      gp,
-      starterRevealState,
-      tableCards,
-      binderCards,
-      packPools,
-      zCounter
-    };
-
+    const runtimeState = { gp, starterRevealState, tableCards, binderCards, packPools, zCounter };
     setProfiles(prev =>
       prev.map(profile =>
-        profile.id === activeProfileId
-          ? { ...profile, state: clone(runtimeState) }
-          : profile
+        profile.id === activeProfileId ? { ...profile, state: clone(runtimeState) } : profile
       )
     );
-  }, [
-    gp,
-    starterRevealState,
-    tableCards,
-    binderCards,
-    packPools,
-    zCounter,
-    activeProfileId
-  ]);
+  }, [gp, starterRevealState, tableCards, binderCards, packPools, zCounter, activeProfileId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({ profiles, activeProfileId })
-    );
+    window.localStorage.setItem(storageKey, JSON.stringify({ profiles, activeProfileId }));
   }, [profiles, activeProfileId, storageKey]);
 
   useEffect(() => {
     if (!cloudEnabled || !cloudReady) return;
-
-    const payload = {
-      profiles: clone(profiles),
-      activeProfileId
-    };
+    const payload = { profiles: clone(profiles), activeProfileId };
     const payloadText = JSON.stringify(payload);
     if (payloadText === lastCloudPayloadRef.current) return;
 
     const timer = setTimeout(async () => {
       try {
-        await saveCloudSession(normalizedOptions.cloud, payload);
+        await saveCloudSession(cloudConfig, payload);
         lastCloudPayloadRef.current = payloadText;
         setCloudSyncError("");
       } catch {
@@ -551,16 +434,7 @@ export function useGameState(options = "default") {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [
-    cloudEnabled,
-    cloudReady,
-    profiles,
-    activeProfileId,
-    normalizedOptions.cloud?.url,
-    normalizedOptions.cloud?.anonKey,
-    normalizedOptions.cloud?.accessToken,
-    normalizedOptions.cloud?.userId
-  ]);
+  }, [cloudEnabled, cloudReady, profiles, activeProfileId, cloudDepKey(cloudConfig)]);
 
   function depositGp(amount) {
     if (!amount || amount <= 0) return;
@@ -569,39 +443,27 @@ export function useGameState(options = "default") {
 
   function openPack(name) {
     if (draftState || starterRevealState) return;
-
     const pack = PACKS.find(p => p.name === name);
     if (!pack || gp < pack.cost) return;
-
     const poolKey = resolvePackPoolKey(name, packPools);
     const pool = packPools[poolKey];
     if (!pool || pool.length === 0) return;
 
     setGp(prev => prev - pack.cost);
-
     const shuffled = shuffle(pool);
-    const draftSize = Math.min(3, pool.length);
-    const draft = shuffled.slice(0, draftSize);
-
-    setDraftState({
-      packName: name,
-      poolKey,
-      options: draft
-    });
+    const draft = shuffled.slice(0, Math.min(3, pool.length));
+    setDraftState({ packName: name, poolKey, options: draft });
   }
 
   function chooseDraftCard(cardId) {
     if (!draftState) return;
-
     const picked = draftState.options.find(c => c.id === cardId);
     if (!picked) return;
-
     const poolKey = draftState.poolKey || draftState.packName;
     setPackPools(prev => ({
       ...prev,
       [poolKey]: (prev[poolKey] || []).filter(c => c.id !== picked.id)
     }));
-
     const nextZ = zCounter + 1;
     setZCounter(nextZ);
     setTableCards(cardsOnTable => [
@@ -615,17 +477,12 @@ export function useGameState(options = "default") {
         zIndex: nextZ
       }
     ]);
-
     setDraftState(null);
   }
 
   function claimStarterCards() {
     if (!starterRevealState) return;
-
-    const starterInstances = createCardInstances(
-      starterRevealState.options
-    );
-    setTableCards(prev => [...prev, ...starterInstances]);
+    setTableCards(prev => [...prev, ...createCardInstances(starterRevealState.options)]);
     setStarterRevealState(null);
   }
 
@@ -633,9 +490,7 @@ export function useGameState(options = "default") {
     setZCounter(prev => {
       const next = prev + 1;
       setTableCards(cardsOnTable =>
-        cardsOnTable.map(c =>
-          c.instanceId === id ? { ...c, zIndex: next } : c
-        )
+        cardsOnTable.map(c => (c.instanceId === id ? { ...c, zIndex: next } : c))
       );
       return next;
     });
@@ -644,7 +499,6 @@ export function useGameState(options = "default") {
   function depositToBinder(id) {
     const card = tableCards.find(c => c.instanceId === id);
     if (!card) return;
-
     setTableCards(prev => prev.filter(c => c.instanceId !== id));
     setBinderCards(prev => [...prev, card]);
   }
@@ -652,14 +506,10 @@ export function useGameState(options = "default") {
   function recallFromBinder(id) {
     const card = binderCards.find(c => c.instanceId === id);
     if (!card) return;
-
     const nextZ = zCounter + 1;
     setZCounter(nextZ);
     setBinderCards(prev => prev.filter(c => c.instanceId !== id));
-    setTableCards(prev => [
-      ...prev,
-      { ...card, x: 400, y: 250, zIndex: nextZ }
-    ]);
+    setTableCards(prev => [...prev, { ...card, x: 400, y: 250, zIndex: nextZ }]);
   }
 
   function debugResetRun() {
@@ -673,12 +523,10 @@ export function useGameState(options = "default") {
   function debugResetTableLayout() {
     setTableCards(prev => {
       if (!prev.length) return prev;
-
       const columns = Math.max(
         1,
         Math.floor(((typeof window !== "undefined" ? window.innerWidth : 1200) - 180) / 150)
       );
-
       return prev.map((card, index) => ({
         ...card,
         x: 140 + (index % columns) * 150,
@@ -690,10 +538,8 @@ export function useGameState(options = "default") {
   function debugSpawnCardById(cardId) {
     const id = cardId?.trim();
     if (!id) return false;
-
     const template = cards.find(c => c.id === id);
     if (!template) return false;
-
     const nextZ = zCounter + 1;
     setZCounter(nextZ);
     const { width: cardWidth } = getRuntimeCardSize();
@@ -714,12 +560,10 @@ export function useGameState(options = "default") {
   function debugDeleteCardById(cardId) {
     const id = cardId?.trim();
     if (!id) return false;
-
     const exists =
       tableCards.some(card => card.id === id) ||
       binderCards.some(card => card.id === id);
     if (!exists) return false;
-
     setTableCards(prev => prev.filter(card => card.id !== id));
     setBinderCards(prev => prev.filter(card => card.id !== id));
     return true;
@@ -737,20 +581,12 @@ export function useGameState(options = "default") {
   function importProfileSession(payload) {
     const normalized = normalizeImportedProfiles(payload);
     if (!normalized) {
-      return {
-        ok: false,
-        message: "Invalid import file (no profiles found)."
-      };
+      return { ok: false, message: "Invalid import file (no profiles found)." };
     }
-
     setProfiles(normalized.profiles);
     setActiveProfileId(normalized.activeProfileId);
     hydrateProfileState(normalized.activeState);
-
-    return {
-      ok: true,
-      message: `Imported ${normalized.profiles.length} profile(s).`
-    };
+    return { ok: true, message: `Imported ${normalized.profiles.length} profile(s).` };
   }
 
   return {
