@@ -337,6 +337,60 @@ export function useGameState(options = "default") {
           }
         }
 
+        // Expand mobile-saved compact layouts back into desktop spacing.
+        if (!isSmallTouch && prev.length > 0) {
+          const xs = prev.map(card => card.x ?? 0);
+          const ys = prev.map(card => card.y ?? 20);
+          const minX = Math.min(...xs);
+          const maxPosX = Math.max(...xs);
+          const minY = Math.min(...ys);
+          const spanX = maxPosX - minX;
+          const spanY = Math.max(...ys) - minY;
+          let overlapPairs = 0;
+          for (let i = 0; i < prev.length; i += 1) {
+            for (let j = i + 1; j < prev.length; j += 1) {
+              const dx = Math.abs((prev[i].x ?? 0) - (prev[j].x ?? 0));
+              const dy = Math.abs((prev[i].y ?? 20) - (prev[j].y ?? 20));
+              if (dx < cardWidth * 0.82 && dy < cardHeight * 0.82) {
+                overlapPairs += 1;
+              }
+            }
+          }
+          const likelyMobileOverlapLayout =
+            prev.length >= 5 && overlapPairs >= Math.max(2, Math.floor(prev.length / 3));
+          const desktopLooksCompacted =
+            tableWidth >= 980 &&
+            spanX < Math.min(420, tableWidth * 0.36) &&
+            spanY < 420;
+
+          if (desktopLooksCompacted || likelyMobileOverlapLayout) {
+            const mobileToDesktopScaleX = Math.max(1.0, Math.min(3.2, cardWidth / 60));
+            const mobileToDesktopScaleY = Math.max(1.0, Math.min(2.8, cardHeight / 88));
+            const compactScaleX = Math.max(1.0, Math.min(3.2, Math.min(Math.max(760, tableWidth * 0.62), 1180) / Math.max(1, spanX)));
+            const scaleX = desktopLooksCompacted
+              ? Math.max(compactScaleX, likelyMobileOverlapLayout ? mobileToDesktopScaleX : 1)
+              : mobileToDesktopScaleX;
+            const scaleY = desktopLooksCompacted
+              ? Math.max(1.0, Math.min(2.8, 1 + (scaleX - 1) * 0.7))
+              : mobileToDesktopScaleY;
+
+            const expanded = prev.map(card => ({
+              ...card,
+              x: ((card.x ?? 0) - minX) * scaleX,
+              y: 260 + ((card.y ?? 20) - minY) * scaleY
+            }));
+
+            const expandedMaxX = Math.max(...expanded.map(card => card.x ?? 0));
+            const centeredStartX = Math.max(0, Math.floor((tableWidth - (expandedMaxX + cardWidth)) / 2));
+
+            return expanded.map(card => ({
+              ...card,
+              x: Math.min(maxX, Math.max(0, (card.x ?? 0) + centeredStartX)),
+              y: Math.min(maxY, Math.max(20, card.y ?? 20))
+            }));
+          }
+        }
+
         const next = prev.map(card => {
           const clampedX = Math.min(Math.max(card.x ?? 0, 0), maxX);
           const clampedY = Math.min(maxY, Math.max(20, card.y ?? 20));
@@ -492,9 +546,22 @@ export function useGameState(options = "default") {
     const pool = packPools[poolKey];
     if (!pool || pool.length === 0) return;
 
+    const ownedIds = new Set([...tableCards, ...binderCards].map(card => card.id));
+    const seen = new Set();
+    const available = pool.filter(card => {
+      if (!card?.id) return false;
+      if (ownedIds.has(card.id)) return false;
+      if (seen.has(card.id)) return false;
+      seen.add(card.id);
+      return true;
+    });
+    if (!available.length) return;
+
+    const shuffled = shuffle(available);
+    const draft = shuffled.slice(0, Math.min(3, available.length));
+    if (!draft.length) return;
+
     setGp(prev => prev - pack.cost);
-    const shuffled = shuffle(pool);
-    const draft = shuffled.slice(0, Math.min(3, pool.length));
     setDraftState({ packName: name, poolKey, options: draft });
   }
 
