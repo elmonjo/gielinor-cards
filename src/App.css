@@ -1311,6 +1311,15 @@ select {
     line-height: 1;
   }
 
+  .binder-card-back-title {
+    font-size: 12px;
+  }
+
+  .binder-card-back-subtitle {
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
   .binder-grid {
     grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
     gap: 6px;
@@ -1465,6 +1474,14 @@ select {
 
   .gc-subtitle {
     font-size: 6px;
+  }
+
+  .binder-card-back-title {
+    font-size: 11px;
+  }
+
+  .binder-card-back-subtitle {
+    font-size: 9px;
   }
 
   .binder-grid {
