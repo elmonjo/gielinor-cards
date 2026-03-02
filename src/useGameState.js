@@ -281,7 +281,11 @@ export function useGameState(options = "default") {
   const [packPools, setPackPools] = useState(normalizePackPools(session.activeState.packPools));
   const [cloudReady, setCloudReady] = useState(!cloudEnabled);
   const [cloudSyncError, setCloudSyncError] = useState("");
+  const [cloudAutosavePulse, setCloudAutosavePulse] = useState(0);
   const lastCloudPayloadRef = useRef("");
+  const lastCloudUpdatedAtRef = useRef(0);
+  const lastCloudPulseSavedRef = useRef(-1);
+  const stateVersionRef = useRef(Date.now());
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -445,6 +449,9 @@ export function useGameState(options = "default") {
             setProfiles(normalized.profiles);
             setActiveProfileId(normalized.activeProfileId);
             hydrateProfileState(normalized.activeState);
+            const remoteUpdatedAt = Number(remoteState.updatedAt) || Date.now();
+            stateVersionRef.current = remoteUpdatedAt;
+            lastCloudUpdatedAtRef.current = remoteUpdatedAt;
           }
         }
         setCloudSyncError("");
@@ -501,6 +508,7 @@ export function useGameState(options = "default") {
 
   useEffect(() => {
     if (!activeProfileId) return;
+    stateVersionRef.current = Date.now();
     const runtimeState = { gp, starterRevealState, tableCards, binderCards, packPools, zCounter };
     setProfiles(prev =>
       prev.map(profile =>
@@ -515,15 +523,43 @@ export function useGameState(options = "default") {
   }, [profiles, activeProfileId, storageKey]);
 
   useEffect(() => {
+    if (!cloudEnabled || !cloudReady) return undefined;
+    const interval = setInterval(() => {
+      setCloudAutosavePulse(prev => prev + 1);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [cloudEnabled, cloudReady]);
+
+  useEffect(() => {
     if (!cloudEnabled || !cloudReady) return;
-    const payload = { profiles: clone(profiles), activeProfileId };
+    const payload = {
+      profiles: clone(profiles),
+      activeProfileId,
+      updatedAt: stateVersionRef.current
+    };
     const payloadText = JSON.stringify(payload);
-    if (payloadText === lastCloudPayloadRef.current) return;
+    const isSamePayload = payloadText === lastCloudPayloadRef.current;
+    const autosaveAlreadyDoneThisPulse = lastCloudPulseSavedRef.current === cloudAutosavePulse;
+    if (isSamePayload && autosaveAlreadyDoneThisPulse) return;
 
     const timer = setTimeout(async () => {
       try {
+        const remoteState = await fetchCloudSession(cloudConfig).catch(() => null);
+        const remoteUpdatedAt = Number(remoteState?.updatedAt) || 0;
+        const localUpdatedAt = Number(payload.updatedAt) || 0;
+        if (
+          remoteUpdatedAt > 0 &&
+          remoteUpdatedAt > lastCloudUpdatedAtRef.current &&
+          localUpdatedAt <= remoteUpdatedAt
+        ) {
+          setCloudSyncError("Cloud has newer progress. Refresh this device before saving.");
+          return;
+        }
+
         await saveCloudSession(cloudConfig, payload);
         lastCloudPayloadRef.current = payloadText;
+        lastCloudUpdatedAtRef.current = Math.max(remoteUpdatedAt, localUpdatedAt);
+        lastCloudPulseSavedRef.current = cloudAutosavePulse;
         setCloudSyncError("");
       } catch {
         setCloudSyncError("Cloud sync failed, retrying in background.");
@@ -531,7 +567,7 @@ export function useGameState(options = "default") {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [cloudEnabled, cloudReady, profiles, activeProfileId, cloudDepKey(cloudConfig)]);
+  }, [cloudEnabled, cloudReady, profiles, activeProfileId, cloudDepKey(cloudConfig), cloudAutosavePulse]);
 
   function depositGp(amount) {
     if (!amount || amount <= 0) return;
@@ -650,6 +686,20 @@ export function useGameState(options = "default") {
     if (!id) return false;
     const template = cards.find(c => c.id === id);
     if (!template) return false;
+    const alreadyOwned =
+      tableCards.some(card => card.id === id) || binderCards.some(card => card.id === id);
+    if (alreadyOwned) return false;
+
+    const poolKey = resolvePackPoolKey(template.path, packPools);
+    const currentPool = Array.isArray(packPools[poolKey]) ? packPools[poolKey] : [];
+    const inPool = currentPool.some(card => card.id === id);
+    if (!inPool) return false;
+
+    setPackPools(prev => ({
+      ...prev,
+      [poolKey]: (prev[poolKey] || []).filter(card => card.id !== id)
+    }));
+
     const nextZ = zCounter + 1;
     setZCounter(nextZ);
     const { width: cardWidth } = getRuntimeCardSize();
