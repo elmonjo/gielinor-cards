@@ -4,6 +4,9 @@ import { cards as allCards } from "../database/cardCatalog";
 export default function BurgerOverlay({ game, auth }) {
   const [newProfileName, setNewProfileName] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [spawnCardId, setSpawnCardId] = useState("");
+  const [deleteCardId, setDeleteCardId] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
 
   const collectedUnique = new Set([
     ...game.tableCards.map(c => c.id),
@@ -115,6 +118,82 @@ export default function BurgerOverlay({ game, auth }) {
             <span>Packs Completed</span>
             <strong>{completedPacks}/{game.PACKS.length}</strong>
           </div>
+        </div>
+
+        <div className="overlay-debug">
+          <div className="overlay-debug-title">Recovery Tools</div>
+          <div className="overlay-debug-row">
+            <input
+              type="text"
+              placeholder="Card ID to spawn"
+              value={spawnCardId}
+              onChange={(e) => setSpawnCardId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                const ok = game.debugSpawnCardById(spawnCardId);
+                setRecoveryMessage(
+                  ok
+                    ? `Spawned ${spawnCardId.trim()}`
+                    : `Could not spawn ${spawnCardId.trim()}`
+                );
+                if (ok) setSpawnCardId("");
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const ok = game.debugSpawnCardById(spawnCardId);
+                setRecoveryMessage(
+                  ok
+                    ? `Spawned ${spawnCardId.trim()}`
+                    : `Could not spawn ${spawnCardId.trim()}`
+                );
+                if (ok) setSpawnCardId("");
+              }}
+            >
+              Spawn
+            </button>
+          </div>
+          <div className="overlay-debug-row">
+            <input
+              type="text"
+              placeholder="Card ID to delete"
+              value={deleteCardId}
+              onChange={(e) => setDeleteCardId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                const ok = game.debugDeleteCardById(deleteCardId);
+                setRecoveryMessage(
+                  ok
+                    ? `Deleted ${deleteCardId.trim()}`
+                    : `Could not delete ${deleteCardId.trim()}`
+                );
+                if (ok) setDeleteCardId("");
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const ok = game.debugDeleteCardById(deleteCardId);
+                setRecoveryMessage(
+                  ok
+                    ? `Deleted ${deleteCardId.trim()}`
+                    : `Could not delete ${deleteCardId.trim()}`
+                );
+                if (ok) setDeleteCardId("");
+              }}
+            >
+              Delete
+            </button>
+          </div>
+          <div className="overlay-debug-note">
+            Spawn pulls from pack pool. Delete returns card to pack pool.
+          </div>
+          {recoveryMessage && (
+            <div className="overlay-debug-note">
+              {recoveryMessage}
+            </div>
+          )}
         </div>
 
         <div className="overlay-actions">
