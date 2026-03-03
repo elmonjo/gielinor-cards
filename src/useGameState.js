@@ -295,105 +295,11 @@ export function useGameState(options = "default") {
       const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
       const tableWidth = table?.clientWidth || window.innerWidth;
       const tableHeight = table?.clientHeight || Math.max(window.innerHeight, 700);
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
       const maxY = Math.max(20, tableHeight - cardHeight - 20);
-      const isSmallTouch =
-        window.matchMedia("(hover: none) and (pointer: coarse)").matches &&
-        window.innerWidth <= 740;
-      const workingWidth = isSmallTouch ? Math.max(220, viewportWidth - 12) : tableWidth;
-      const maxX = Math.max(0, workingWidth - cardWidth);
+      const maxX = Math.max(0, tableWidth - cardWidth);
 
       setTableCards(prev => {
         let changed = false;
-
-        // Reflow synced desktop layouts into a compact mobile grid.
-        if (isSmallTouch && prev.length > 0) {
-          const xs = prev.map(card => card.x ?? 0);
-          const ys = prev.map(card => card.y ?? 20);
-          const minX = Math.min(...xs);
-          const maxPosX = Math.max(...xs);
-          const minY = Math.min(...ys);
-          const maxPosY = Math.max(...ys);
-          const spanX = Math.max(...xs) - Math.min(...xs);
-          const spanY = Math.max(...ys) - Math.min(...ys);
-          const needsReflow =
-            minX < 0 ||
-            maxPosX > maxX + 6 ||
-            minY < 20 ||
-            spanX > workingWidth * 0.92 ||
-            spanY > viewportHeight * 0.78 ||
-            maxPosY > Math.max(560, viewportHeight * 2.2);
-
-          if (needsReflow) {
-            const gapX = 10;
-            const gapY = 14;
-            const columns = Math.max(1, Math.floor((workingWidth - 12) / (cardWidth + gapX)));
-            const rowWidth = columns * cardWidth + (columns - 1) * gapX;
-            const startX = Math.max(0, Math.floor((workingWidth - rowWidth) / 2));
-            const startY = 260;
-
-            return prev.map((card, index) => ({
-              ...card,
-              x: Math.min(maxX, Math.max(0, startX + (index % columns) * (cardWidth + gapX))),
-              y: Math.min(maxY, Math.max(20, startY + Math.floor(index / columns) * (cardHeight + gapY)))
-            }));
-          }
-        }
-
-        // Expand mobile-saved compact layouts back into desktop spacing.
-        if (!isSmallTouch && prev.length > 0) {
-          const xs = prev.map(card => card.x ?? 0);
-          const ys = prev.map(card => card.y ?? 20);
-          const minX = Math.min(...xs);
-          const maxPosX = Math.max(...xs);
-          const minY = Math.min(...ys);
-          const spanX = maxPosX - minX;
-          const spanY = Math.max(...ys) - minY;
-          let overlapPairs = 0;
-          for (let i = 0; i < prev.length; i += 1) {
-            for (let j = i + 1; j < prev.length; j += 1) {
-              const dx = Math.abs((prev[i].x ?? 0) - (prev[j].x ?? 0));
-              const dy = Math.abs((prev[i].y ?? 20) - (prev[j].y ?? 20));
-              if (dx < cardWidth * 0.82 && dy < cardHeight * 0.82) {
-                overlapPairs += 1;
-              }
-            }
-          }
-          const likelyMobileOverlapLayout =
-            prev.length >= 5 && overlapPairs >= Math.max(2, Math.floor(prev.length / 3));
-          const desktopLooksCompacted =
-            tableWidth >= 980 &&
-            spanX < Math.min(420, tableWidth * 0.36) &&
-            spanY < 420;
-
-          if (desktopLooksCompacted || likelyMobileOverlapLayout) {
-            const mobileToDesktopScaleX = Math.max(1.0, Math.min(3.2, cardWidth / 60));
-            const mobileToDesktopScaleY = Math.max(1.0, Math.min(2.8, cardHeight / 88));
-            const compactScaleX = Math.max(1.0, Math.min(3.2, Math.min(Math.max(760, tableWidth * 0.62), 1180) / Math.max(1, spanX)));
-            const scaleX = desktopLooksCompacted
-              ? Math.max(compactScaleX, likelyMobileOverlapLayout ? mobileToDesktopScaleX : 1)
-              : mobileToDesktopScaleX;
-            const scaleY = desktopLooksCompacted
-              ? Math.max(1.0, Math.min(2.8, 1 + (scaleX - 1) * 0.7))
-              : mobileToDesktopScaleY;
-
-            const expanded = prev.map(card => ({
-              ...card,
-              x: ((card.x ?? 0) - minX) * scaleX,
-              y: 260 + ((card.y ?? 20) - minY) * scaleY
-            }));
-
-            const expandedMaxX = Math.max(...expanded.map(card => card.x ?? 0));
-            const centeredStartX = Math.max(0, Math.floor((tableWidth - (expandedMaxX + cardWidth)) / 2));
-
-            return expanded.map(card => ({
-              ...card,
-              x: Math.min(maxX, Math.max(0, (card.x ?? 0) + centeredStartX)),
-              y: Math.min(maxY, Math.max(20, card.y ?? 20))
-            }));
-          }
-        }
 
         const next = prev.map(card => {
           const clampedX = Math.min(Math.max(card.x ?? 0, 0), maxX);
