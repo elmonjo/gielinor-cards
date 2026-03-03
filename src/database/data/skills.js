@@ -114,5 +114,10 @@ export const skillCardsData = [
   { id:"construction_21_40", title:"Construction", subtitle:"21-40", type:"skill", rarity:"common", path:"Intermediate", shiny:false , image:"/card-images/construction_21_40.png"},
   { id:"construction_41_60", title:"Construction", subtitle:"41-60", type:"skill", rarity:"common", path:"Experienced", shiny:false , image:"/card-images/construction_41_60.png"},
   { id:"construction_61_80", title:"Construction", subtitle:"61-80", type:"skill", rarity:"common", path:"Master", shiny:false , image:"/card-images/construction_61_80.png"},
-  { id:"construction_81_99", title:"Construction", subtitle:"81-99", type:"skill", rarity:"common", path:"Grandmaster", shiny:false , image:"/card-images/construction_81_99.png"}
+  { id:"construction_81_99", title:"Construction", subtitle:"81-99", type:"skill", rarity:"common", path:"Grandmaster", shiny:false , image:"/card-images/construction_81_99.png"},
+  { id:"sailing_1_20", title:"Sailing", subtitle:"1-20", type:"skill", rarity:"common", path:"Novice", shiny:false , image:"/card-images/sailing_1_20.png"},
+  { id:"sailing_21_40", title:"Sailing", subtitle:"21-40", type:"skill", rarity:"common", path:"Intermediate", shiny:false , image:"/card-images/sailing_21_40.png"},
+  { id:"sailing_41_60", title:"Sailing", subtitle:"41-60", type:"skill", rarity:"common", path:"Experienced", shiny:false , image:"/card-images/sailing_41_60.png"},
+  { id:"sailing_61_80", title:"Sailing", subtitle:"61-80", type:"skill", rarity:"common", path:"Master", shiny:false , image:"/card-images/sailing_61_80.png"},
+  { id:"sailing_81_99", title:"Sailing", subtitle:"81-99", type:"skill", rarity:"common", path:"Grandmaster", shiny:false , image:"/card-images/sailing_81_99.png"}
 ];
