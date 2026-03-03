@@ -432,7 +432,7 @@ export function useGameState(options = "default") {
     if (!cloudEnabled || !cloudReady) return undefined;
     const interval = setInterval(() => {
       setCloudAutosavePulse(prev => prev + 1);
-    }, 30000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [cloudEnabled, cloudReady]);
 
