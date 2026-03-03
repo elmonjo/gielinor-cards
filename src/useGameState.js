@@ -287,6 +287,47 @@ export function useGameState(options = "default") {
   const lastCloudPulseSavedRef = useRef(-1);
   const stateVersionRef = useRef(Date.now());
 
+  function buildCloudPayload() {
+    return {
+      profiles: clone(profiles),
+      activeProfileId,
+      updatedAt: stateVersionRef.current
+    };
+  }
+
+  async function flushCloudSave() {
+    if (!cloudEnabled || !cloudReady) {
+      return { ok: true, skipped: true };
+    }
+    const payload = buildCloudPayload();
+    const payloadText = JSON.stringify(payload);
+
+    try {
+      const remoteState = await fetchCloudSession(cloudConfig).catch(() => null);
+      const remoteUpdatedAt = Number(remoteState?.updatedAt) || 0;
+      const localUpdatedAt = Number(payload.updatedAt) || 0;
+      if (
+        remoteUpdatedAt > 0 &&
+        remoteUpdatedAt > lastCloudUpdatedAtRef.current &&
+        localUpdatedAt <= remoteUpdatedAt
+      ) {
+        const message = "Cloud has newer progress. Refresh this device before saving.";
+        setCloudSyncError(message);
+        return { ok: false, message };
+      }
+
+      await saveCloudSession(cloudConfig, payload);
+      lastCloudPayloadRef.current = payloadText;
+      lastCloudUpdatedAtRef.current = Math.max(remoteUpdatedAt, localUpdatedAt);
+      setCloudSyncError("");
+      return { ok: true };
+    } catch {
+      const message = "Cloud sync failed, retrying in background.";
+      setCloudSyncError(message);
+      return { ok: false, message };
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
@@ -437,38 +478,35 @@ export function useGameState(options = "default") {
   }, [cloudEnabled, cloudReady]);
 
   useEffect(() => {
-    if (!cloudEnabled || !cloudReady) return;
-    const payload = {
-      profiles: clone(profiles),
-      activeProfileId,
-      updatedAt: stateVersionRef.current
+    if (!cloudEnabled || !cloudReady) return undefined;
+    const handlePageHide = () => {
+      flushCloudSave();
     };
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        flushCloudSave();
+      }
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [cloudEnabled, cloudReady, profiles, activeProfileId, cloudDepKey(cloudConfig)]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !cloudReady) return;
+    const payload = buildCloudPayload();
     const payloadText = JSON.stringify(payload);
     const isSamePayload = payloadText === lastCloudPayloadRef.current;
     const autosaveAlreadyDoneThisPulse = lastCloudPulseSavedRef.current === cloudAutosavePulse;
     if (isSamePayload && autosaveAlreadyDoneThisPulse) return;
 
     const timer = setTimeout(async () => {
-      try {
-        const remoteState = await fetchCloudSession(cloudConfig).catch(() => null);
-        const remoteUpdatedAt = Number(remoteState?.updatedAt) || 0;
-        const localUpdatedAt = Number(payload.updatedAt) || 0;
-        if (
-          remoteUpdatedAt > 0 &&
-          remoteUpdatedAt > lastCloudUpdatedAtRef.current &&
-          localUpdatedAt <= remoteUpdatedAt
-        ) {
-          setCloudSyncError("Cloud has newer progress. Refresh this device before saving.");
-          return;
-        }
-
-        await saveCloudSession(cloudConfig, payload);
-        lastCloudPayloadRef.current = payloadText;
-        lastCloudUpdatedAtRef.current = Math.max(remoteUpdatedAt, localUpdatedAt);
+      const result = await flushCloudSave();
+      if (result.ok) {
         lastCloudPulseSavedRef.current = cloudAutosavePulse;
-        setCloudSyncError("");
-      } catch {
-        setCloudSyncError("Cloud sync failed, retrying in background.");
       }
     }, 400);
 
@@ -712,6 +750,7 @@ export function useGameState(options = "default") {
     debugDeleteCardById,
     exportProfileSession,
     importProfileSession,
+    flushCloudSave,
     cloudStatus: {
       enabled: cloudEnabled,
       ready: cloudReady,

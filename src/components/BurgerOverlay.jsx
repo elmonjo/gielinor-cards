@@ -122,7 +122,16 @@ export default function BurgerOverlay({ game, auth }) {
             <button
               type="button"
               className="overlay-delete-profile"
-              onClick={() => auth.logout()}
+              onClick={async () => {
+                const result = await game.flushCloudSave?.();
+                if (result && result.ok === false) {
+                  const proceed = window.confirm(
+                    `${result.message || "Cloud sync failed."} Log out anyway?`
+                  );
+                  if (!proceed) return;
+                }
+                auth.logout();
+              }}
             >
               Log Out
             </button>
