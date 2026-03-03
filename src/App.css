@@ -455,6 +455,11 @@ select {
   cursor: default;
 }
 
+.binder-slot.missing .binder-card-faded {
+  opacity: 0.42;
+  filter: saturate(0.7);
+}
+
 .binder-silhouette {
   background: linear-gradient(160deg, #2d251e, #1d1713);
   border-color: #5e4a28;
