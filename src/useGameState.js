@@ -4,11 +4,11 @@ import { cards } from "./database/cardCatalog";
 const STORAGE_KEY_PREFIX = "gielinor_runtime_profiles_v1";
 
 const PACKS = [
-  { name: "Novice", cost: 5000 },
-  { name: "Intermediate", cost: 25000 },
-  { name: "Experienced", cost: 100000 },
-  { name: "Master", cost: 250000 },
-  { name: "Grandmaster", cost: 500000 }
+  { name: "Novice", cost: 2500 },
+  { name: "Intermediate", cost: 15000 },
+  { name: "Experienced", cost: 50000 },
+  { name: "Master", cost: 100000 },
+  { name: "Grandmaster", cost: 200000 }
 ];
 
 const LEGACY_PATH_MAP = {
