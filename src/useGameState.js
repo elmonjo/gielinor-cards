@@ -281,6 +281,7 @@ export function useGameState(options = "default") {
   const [packPools, setPackPools] = useState(normalizePackPools(session.activeState.packPools));
   const [cloudReady, setCloudReady] = useState(!cloudEnabled);
   const [cloudSyncError, setCloudSyncError] = useState("");
+  const [lastCloudSaveAt, setLastCloudSaveAt] = useState(0);
   const [cloudAutosavePulse, setCloudAutosavePulse] = useState(0);
   const lastCloudPayloadRef = useRef("");
   const lastCloudUpdatedAtRef = useRef(0);
@@ -319,6 +320,7 @@ export function useGameState(options = "default") {
       await saveCloudSession(cloudConfig, payload);
       lastCloudPayloadRef.current = payloadText;
       lastCloudUpdatedAtRef.current = Math.max(remoteUpdatedAt, localUpdatedAt);
+      setLastCloudSaveAt(Date.now());
       setCloudSyncError("");
       return { ok: true };
     } catch {
@@ -754,7 +756,8 @@ export function useGameState(options = "default") {
     cloudStatus: {
       enabled: cloudEnabled,
       ready: cloudReady,
-      error: cloudSyncError
+      error: cloudSyncError,
+      lastSavedAt: lastCloudSaveAt
     }
   };
 }

@@ -41,6 +41,16 @@ export default function BurgerOverlay({ game, auth }) {
             {game.cloudStatus.error ? ` (${game.cloudStatus.error})` : ""}
           </div>
         )}
+        {game.cloudStatus?.enabled && (
+          <div className="overlay-debug-note">
+            Last cloud save:{" "}
+            <strong>
+              {game.cloudStatus.lastSavedAt
+                ? new Date(game.cloudStatus.lastSavedAt).toLocaleTimeString()
+                : "Not yet"}
+            </strong>
+          </div>
+        )}
 
         <div className="overlay-profile-tools">
           <label>
