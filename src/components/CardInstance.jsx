@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { applySnap, detectSnapTarget } from "../snapEngine";
+import { cards as allCards } from "../database/cardCatalog";
 
 const CARD_WIDTH_DESKTOP = 130;
 const CARD_HEIGHT_DESKTOP = 190;
@@ -34,6 +35,8 @@ const getClientPoint = (event) => {
 export default function CardInstance({ card, game }) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const catalogCard = allCards.find(entry => entry.id === card.id);
+  const imageSrc = catalogCard?.image || card.image;
 
   const getCardDimensions = () => {
     const isMobile =
@@ -193,11 +196,11 @@ export default function CardInstance({ card, game }) {
           {card.subtitle && <div className="gc-subtitle">{card.subtitle}</div>}
         </div>
 
-        {card.image && (
+        {imageSrc && (
           <div className="gc-art-wrap">
             <img
               className={`gc-art ${card.type === "skill" ? "gc-art--skill" : ""} ${card.type === "quest" ? "gc-art--quest" : ""} ${card.type === "diary" ? "gc-art--diary" : ""}`}
-              src={card.image}
+              src={imageSrc}
               alt={card.title}
               draggable="false"
               onError={(event) => {
