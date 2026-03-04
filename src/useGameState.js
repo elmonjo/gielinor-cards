@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cards } from "./database/cardCatalog";
 
 const STORAGE_KEY_PREFIX = "gielinor_runtime_profiles_v1";
+const LOCAL_BACKUP_LIMIT = 10;
 
 const PACKS = [
   { name: "Novice", cost: 2500 },
@@ -30,6 +31,31 @@ function resolvePackPoolKey(packName, pools) {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function safeParse(value, fallback) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveLocalBackupSnapshot(storageKey, nextPayloadText) {
+  if (typeof window === "undefined") return;
+  const previousText = window.localStorage.getItem(storageKey);
+  if (!previousText || previousText === nextPayloadText) return;
+
+  const backupKey = `${storageKey}:backup_history`;
+  const history = safeParse(window.localStorage.getItem(backupKey), []);
+  const previousPayload = safeParse(previousText, null);
+  const entry = {
+    capturedAt: Date.now(),
+    updatedAt: Number(previousPayload?.updatedAt) || 0,
+    payload: previousText
+  };
+  const nextHistory = [entry, ...history].slice(0, LOCAL_BACKUP_LIMIT);
+  window.localStorage.setItem(backupKey, JSON.stringify(nextHistory));
 }
 
 function shuffle(items) {
@@ -144,7 +170,8 @@ function loadProfileSessionFromKeys(storageKeys) {
     return {
       profiles: [fallback],
       activeProfileId: fallback.id,
-      activeState: fallback.state
+      activeState: fallback.state,
+      updatedAt: 0
     };
   }
 
@@ -160,7 +187,8 @@ function loadProfileSessionFromKeys(storageKeys) {
       return {
         profiles,
         activeProfileId: activeProfile.id,
-        activeState: activeProfile.state
+        activeState: activeProfile.state,
+        updatedAt: Number(parsed?.updatedAt) || 0
       };
     } catch {
       continue;
@@ -171,7 +199,8 @@ function loadProfileSessionFromKeys(storageKeys) {
   return {
     profiles: [fallback],
     activeProfileId: fallback.id,
-    activeState: fallback.state
+    activeState: fallback.state,
+    updatedAt: 0
   };
 }
 
@@ -286,9 +315,15 @@ export function useGameState(options = "default") {
   const lastCloudPayloadRef = useRef("");
   const lastCloudUpdatedAtRef = useRef(0);
   const lastCloudPulseSavedRef = useRef(-1);
-  const stateVersionRef = useRef(Date.now());
+  const stateVersionRef = useRef(Number(session.updatedAt) || 0);
+  const skipNextVersionBumpRef = useRef(true);
+  const hydrationCompleteRef = useRef(false);
+  const hasPendingCloudSaveRef = useRef(false);
 
   function buildCloudPayload() {
+    if (stateVersionRef.current <= 0) {
+      stateVersionRef.current = Date.now();
+    }
     return {
       profiles: clone(profiles),
       activeProfileId,
@@ -302,6 +337,9 @@ export function useGameState(options = "default") {
     }
     const payload = buildCloudPayload();
     const payloadText = JSON.stringify(payload);
+    if (!hasPendingCloudSaveRef.current && payloadText === lastCloudPayloadRef.current) {
+      return { ok: true, skipped: true };
+    }
 
     try {
       const remoteState = await fetchCloudSession(cloudConfig).catch(() => null);
@@ -320,6 +358,7 @@ export function useGameState(options = "default") {
       await saveCloudSession(cloudConfig, payload);
       lastCloudPayloadRef.current = payloadText;
       lastCloudUpdatedAtRef.current = Math.max(remoteUpdatedAt, localUpdatedAt);
+      hasPendingCloudSaveRef.current = false;
       setLastCloudSaveAt(Date.now());
       setCloudSyncError("");
       return { ok: true };
@@ -368,7 +407,10 @@ export function useGameState(options = "default") {
     };
   }, []);
 
-  function hydrateProfileState(state) {
+  function hydrateProfileState(state, options = {}) {
+    if (options?.skipVersionBump) {
+      skipNextVersionBumpRef.current = true;
+    }
     setDraftState(null);
     setStarterRevealState(state?.starterRevealState || null);
     setMenuOpen(false);
@@ -382,9 +424,14 @@ export function useGameState(options = "default") {
 
   useEffect(() => {
     let canceled = false;
+    hydrationCompleteRef.current = false;
+    skipNextVersionBumpRef.current = true;
+    hasPendingCloudSaveRef.current = false;
 
     async function hydrateFromCloud() {
       if (!cloudEnabled) {
+        hydrationCompleteRef.current = true;
+        hasPendingCloudSaveRef.current = true;
         setCloudReady(true);
         return;
       }
@@ -397,19 +444,38 @@ export function useGameState(options = "default") {
           if (normalized) {
             setProfiles(normalized.profiles);
             setActiveProfileId(normalized.activeProfileId);
-            hydrateProfileState(normalized.activeState);
+            hydrateProfileState(normalized.activeState, { skipVersionBump: true });
             const remoteUpdatedAt = Number(remoteState.updatedAt) || Date.now();
             stateVersionRef.current = remoteUpdatedAt;
             lastCloudUpdatedAtRef.current = remoteUpdatedAt;
+            lastCloudPayloadRef.current = JSON.stringify({
+              profiles: clone(normalized.profiles),
+              activeProfileId: normalized.activeProfileId,
+              updatedAt: remoteUpdatedAt
+            });
+          } else {
+            if (stateVersionRef.current <= 0) {
+              stateVersionRef.current = Date.now();
+            }
+            hasPendingCloudSaveRef.current = true;
           }
+        } else {
+          if (stateVersionRef.current <= 0) {
+            stateVersionRef.current = Date.now();
+          }
+          hasPendingCloudSaveRef.current = true;
         }
         setCloudSyncError("");
       } catch {
         if (!canceled) {
+          hasPendingCloudSaveRef.current = true;
           setCloudSyncError("Cloud sync unavailable, using local save.");
         }
       } finally {
-        if (!canceled) setCloudReady(true);
+        if (!canceled) {
+          hydrationCompleteRef.current = true;
+          setCloudReady(true);
+        }
       }
     }
 
@@ -423,7 +489,7 @@ export function useGameState(options = "default") {
     const selected = profiles.find(p => p.id === profileId);
     if (!selected) return;
     setActiveProfileId(selected.id);
-    hydrateProfileState(clone(selected.state));
+    hydrateProfileState(clone(selected.state), { skipVersionBump: true });
   }
 
   function createNewProfile(profileName) {
@@ -443,13 +509,13 @@ export function useGameState(options = "default") {
       if (!remaining.length) {
         const fallback = createProfile("Main");
         setActiveProfileId(fallback.id);
-        hydrateProfileState(clone(fallback.state));
+        hydrateProfileState(clone(fallback.state), { skipVersionBump: true });
         return [fallback];
       }
       if (activeProfileId === profileId) {
         const next = remaining[0];
         setActiveProfileId(next.id);
-        hydrateProfileState(clone(next.state));
+        hydrateProfileState(clone(next.state), { skipVersionBump: true });
       }
       return remaining;
     });
@@ -457,7 +523,13 @@ export function useGameState(options = "default") {
 
   useEffect(() => {
     if (!activeProfileId) return;
-    stateVersionRef.current = Date.now();
+    const shouldSkipVersionBump =
+      skipNextVersionBumpRef.current || !hydrationCompleteRef.current;
+    skipNextVersionBumpRef.current = false;
+    if (!shouldSkipVersionBump) {
+      stateVersionRef.current = Date.now();
+      hasPendingCloudSaveRef.current = true;
+    }
     const runtimeState = { gp, starterRevealState, tableCards, binderCards, packPools, zCounter };
     setProfiles(prev =>
       prev.map(profile =>
@@ -468,7 +540,13 @@ export function useGameState(options = "default") {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(storageKey, JSON.stringify({ profiles, activeProfileId }));
+    const payloadText = JSON.stringify({
+      profiles,
+      activeProfileId,
+      updatedAt: stateVersionRef.current
+    });
+    saveLocalBackupSnapshot(storageKey, payloadText);
+    window.localStorage.setItem(storageKey, payloadText);
   }, [profiles, activeProfileId, storageKey]);
 
   useEffect(() => {
@@ -502,6 +580,7 @@ export function useGameState(options = "default") {
     const payload = buildCloudPayload();
     const payloadText = JSON.stringify(payload);
     const isSamePayload = payloadText === lastCloudPayloadRef.current;
+    if (!hasPendingCloudSaveRef.current && isSamePayload) return;
     const autosaveAlreadyDoneThisPulse = lastCloudPulseSavedRef.current === cloudAutosavePulse;
     if (isSamePayload && autosaveAlreadyDoneThisPulse) return;
 

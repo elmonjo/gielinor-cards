@@ -193,7 +193,7 @@
   { id:"zombie_axe", title:"Zombie Axe", type:"gear", rarity:"rare", path:"Experienced", shiny:false, image:"/card-images/dragon_scimitar.png" },
   { id:"burning_claws", title:"Burning Claws", type:"gear", rarity:"epic", path:"Master", shiny:true, image:"/card-images/dragon_claws.png" },
   { id:"noxious_halberd", title:"Noxious Halberd", type:"gear", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/elder_maul.png" },
-  { id:"bone_crossbow", title:"Bone Crossbow", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/rune_crossbow.png" },
+  { id:"bone_crossbow", title:"Bone Crossbow", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/bone_crossbow.png" },
   { id:"hunters_sunlight_crossbow", title:"Hunters' Sunlight Crossbow", type:"gear", rarity:"rare", path:"Experienced", shiny:false, image:"/card-images/rune_crossbow.png" },
   { id:"scorching_bow", title:"Scorching Bow", type:"gear", rarity:"epic", path:"Master", shiny:true, image:"/card-images/bow_of_faerdhinen.png" },
   { id:"ibans_staff_u", title:"Ibans Staff", type:"gear", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/staff_of_air.png" },
