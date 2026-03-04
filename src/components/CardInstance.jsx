@@ -9,7 +9,7 @@ const CARD_HEIGHT_MOBILE = 88;
 const TABLE_TOP_GUTTER = 20;
 const MOBILE_LAYOUT_BREAKPOINT = 740;
 const EDGE_SCROLL_THRESHOLD = 80;
-const EDGE_SCROLL_MAX_STEP = 8;
+const EDGE_SCROLL_MAX_STEP = 6;
 
 const clamp = (value, min, max) =>
   Math.min(Math.max(value, min), max);
