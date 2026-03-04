@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { applySnap, detectSnapTarget } from "../snapEngine";
+import { detectSnapTarget, resolveSnap } from "../snapEngine";
 import { cards as allCards } from "../database/cardCatalog";
 
 const CARD_WIDTH_DESKTOP = 130;
@@ -7,6 +7,8 @@ const CARD_HEIGHT_DESKTOP = 190;
 const CARD_WIDTH_MOBILE = 60;
 const CARD_HEIGHT_MOBILE = 88;
 const TABLE_TOP_GUTTER = 20;
+const EDGE_SCROLL_THRESHOLD = 56;
+const EDGE_SCROLL_STEP = 20;
 
 const clamp = (value, min, max) =>
   Math.min(Math.max(value, min), max);
@@ -48,6 +50,39 @@ export default function CardInstance({ card, game }) {
     };
   };
 
+  const autoPanMainAtEdge = (point) => {
+    const main = document.querySelector(".main");
+    if (!main) return;
+
+    const bounds = main.getBoundingClientRect();
+    let deltaX = 0;
+    let deltaY = 0;
+
+    if (point.x > bounds.right - EDGE_SCROLL_THRESHOLD) {
+      deltaX = EDGE_SCROLL_STEP;
+    } else if (point.x < bounds.left + EDGE_SCROLL_THRESHOLD) {
+      deltaX = -EDGE_SCROLL_STEP;
+    }
+
+    if (point.y > bounds.bottom - EDGE_SCROLL_THRESHOLD) {
+      deltaY = EDGE_SCROLL_STEP;
+    } else if (point.y < bounds.top + EDGE_SCROLL_THRESHOLD) {
+      deltaY = -EDGE_SCROLL_STEP;
+    }
+
+    if (deltaX !== 0) {
+      const maxScrollLeft = Math.max(0, main.scrollWidth - main.clientWidth);
+      const nextLeft = clamp(main.scrollLeft + deltaX, 0, maxScrollLeft);
+      main.scrollLeft = nextLeft;
+    }
+
+    if (deltaY !== 0) {
+      const maxScrollTop = Math.max(0, main.scrollHeight - main.clientHeight);
+      const nextTop = clamp(main.scrollTop + deltaY, 0, maxScrollTop);
+      main.scrollTop = nextTop;
+    }
+  };
+
   const startDrag = (event) => {
     event.preventDefault();
     dragging.current = true;
@@ -73,9 +108,11 @@ export default function CardInstance({ card, game }) {
   const updateDrag = (event) => {
     if (!dragging.current) return;
 
+    const point = getClientPoint(event);
+    autoPanMainAtEdge(point);
+
     const table = document.querySelector(".table");
     const tableRect = table.getBoundingClientRect();
-    const point = getClientPoint(event);
     const { width, height } = getCardDimensions();
     const maxX = Math.max(0, tableRect.width - width);
     const rawX = point.x - tableRect.left - offset.current.x;
@@ -93,7 +130,7 @@ export default function CardInstance({ card, game }) {
     game.setTableCards(prev =>
       prev.map(c => {
         if (c.instanceId === card.instanceId) {
-          return { ...c, x: newX, y: newY };
+          return { ...c, x: newX, y: newY, snappedToId: null, snapEdge: null };
         }
 
         return {
@@ -134,7 +171,16 @@ export default function CardInstance({ card, game }) {
       if (!moving) return prev;
 
       const { width, height } = getCardDimensions();
-      const snapped = applySnap(moving, prev, width, height);
+      const snap = resolveSnap(moving, prev, width, height);
+      const snapped = snap
+        ? {
+            ...moving,
+            x: snap.x,
+            y: snap.y,
+            snappedToId: snap.targetId,
+            snapEdge: snap.edge
+          }
+        : { ...moving, snappedToId: null, snapEdge: null };
 
       return prev.map(c =>
         c.instanceId === card.instanceId

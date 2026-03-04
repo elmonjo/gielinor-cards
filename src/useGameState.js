@@ -3,6 +3,7 @@ import { cards } from "./database/cardCatalog";
 
 const STORAGE_KEY_PREFIX = "gielinor_runtime_profiles_v1";
 const LOCAL_BACKUP_LIMIT = 10;
+const TABLE_TOP_GUTTER = 20;
 
 const PACKS = [
   { name: "Novice", cost: 2500 },
@@ -68,6 +69,197 @@ function getRuntimeCardSize() {
   return isTouchDevice ? { width: 60, height: 88 } : { width: 130, height: 190 };
 }
 
+function getLayoutBounds() {
+  const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
+  if (typeof window === "undefined") {
+    return {
+      maxX: Math.max(0, 1200 - cardWidth),
+      maxY: Math.max(TABLE_TOP_GUTTER, 700 - cardHeight - 20)
+    };
+  }
+
+  const table = document.querySelector(".table");
+  const tableWidth = table?.clientWidth || window.innerWidth;
+  const tableHeight = table?.clientHeight || Math.max(window.innerHeight, 700);
+  return {
+    maxX: Math.max(0, tableWidth - cardWidth),
+    maxY: Math.max(TABLE_TOP_GUTTER, tableHeight - cardHeight - 20)
+  };
+}
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function offsetFromSnapEdge(edge, cardWidth, cardHeight) {
+  switch (edge) {
+    case "right":
+      return { dx: cardWidth, dy: 0 };
+    case "left":
+      return { dx: -cardWidth, dy: 0 };
+    case "bottom":
+      return { dx: 0, dy: cardHeight };
+    case "top":
+      return { dx: 0, dy: -cardHeight };
+    default:
+      return { dx: 0, dy: 0 };
+  }
+}
+
+function applySnapLinks(cardList, bounds = getLayoutBounds()) {
+  const next = (cardList || []).map(card => ({ ...card }));
+  if (!next.length) return next;
+
+  const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
+  const indexById = new Map(next.map((card, index) => [card.instanceId, index]));
+  const maxY = bounds.maxY;
+  const maxX = bounds.maxX;
+
+  for (let pass = 0; pass < next.length; pass += 1) {
+    let changed = false;
+
+    next.forEach(card => {
+      if (!card?.snappedToId || !card?.snapEdge) return;
+      const targetIndex = indexById.get(card.snappedToId);
+      if (targetIndex == null) {
+        card.snappedToId = null;
+        card.snapEdge = null;
+        changed = true;
+        return;
+      }
+      const target = next[targetIndex];
+      const offset = offsetFromSnapEdge(card.snapEdge, cardWidth, cardHeight);
+      const clampedX = Math.min(Math.max(target.x + offset.dx, 0), maxX);
+      const clampedY = Math.min(Math.max(target.y + offset.dy, TABLE_TOP_GUTTER), maxY);
+      if (card.x !== clampedX || card.y !== clampedY) {
+        card.x = clampedX;
+        card.y = clampedY;
+        changed = true;
+      }
+    });
+
+    if (!changed) break;
+  }
+
+  return next;
+}
+
+function inferLegacySnapLinks(cardList) {
+  const next = (cardList || []).map(card => ({ ...card }));
+  if (!next.length) return next;
+  const hasAnyLinks = next.some(card => card?.snappedToId && card?.snapEdge);
+  if (hasAnyLinks) return next;
+
+  const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
+  const tolerance = 2;
+
+  next.forEach((card, index) => {
+    const candidates = next.filter((_, candidateIndex) => candidateIndex !== index);
+    const target = candidates.find(other => {
+      const dx = (card.x ?? 0) - (other.x ?? 0);
+      const dy = (card.y ?? 0) - (other.y ?? 0);
+      const sameRow = Math.abs(dy) <= tolerance;
+      const sameCol = Math.abs(dx) <= tolerance;
+      return (
+        (sameRow && Math.abs(dx - cardWidth) <= tolerance) ||
+        (sameRow && Math.abs(dx + cardWidth) <= tolerance) ||
+        (sameCol && Math.abs(dy - cardHeight) <= tolerance) ||
+        (sameCol && Math.abs(dy + cardHeight) <= tolerance)
+      );
+    });
+
+    if (!target) return;
+
+    const dx = (card.x ?? 0) - (target.x ?? 0);
+    const dy = (card.y ?? 0) - (target.y ?? 0);
+    if (Math.abs(dy) <= tolerance && Math.abs(dx - cardWidth) <= tolerance) {
+      card.snappedToId = target.instanceId;
+      card.snapEdge = "right";
+      return;
+    }
+    if (Math.abs(dy) <= tolerance && Math.abs(dx + cardWidth) <= tolerance) {
+      card.snappedToId = target.instanceId;
+      card.snapEdge = "left";
+      return;
+    }
+    if (Math.abs(dx) <= tolerance && Math.abs(dy - cardHeight) <= tolerance) {
+      card.snappedToId = target.instanceId;
+      card.snapEdge = "bottom";
+      return;
+    }
+    if (Math.abs(dx) <= tolerance && Math.abs(dy + cardHeight) <= tolerance) {
+      card.snappedToId = target.instanceId;
+      card.snapEdge = "top";
+    }
+  });
+
+  return next;
+}
+
+function normalizeTableCardsForSave(cardList) {
+  const bounds = getLayoutBounds();
+  const spanY = Math.max(1, bounds.maxY - TABLE_TOP_GUTTER);
+
+  return (cardList || []).map(card => {
+    const rawX = Number(card?.x);
+    const rawY = Number(card?.y);
+    const xRatio = bounds.maxX > 0 ? clamp01((Number.isFinite(rawX) ? rawX : 0) / bounds.maxX) : 0;
+    const yRatio = clamp01(
+      ((Number.isFinite(rawY) ? rawY : TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER) / spanY
+    );
+    return {
+      ...card,
+      x: bounds.maxX * xRatio,
+      y: TABLE_TOP_GUTTER + spanY * yRatio,
+      xRatio,
+      yRatio
+    };
+  });
+}
+
+function resolveTableCardsFromSave(cardList) {
+  const bounds = getLayoutBounds();
+  const spanY = Math.max(1, bounds.maxY - TABLE_TOP_GUTTER);
+  const rawCards = cardList || [];
+  const inferredSourceMaxX = Math.max(
+    bounds.maxX,
+    ...rawCards.map(card => (Number.isFinite(Number(card?.x)) ? Number(card.x) : 0))
+  );
+  const inferredSourceMaxY = Math.max(
+    bounds.maxY,
+    ...rawCards.map(card => (Number.isFinite(Number(card?.y)) ? Number(card.y) : TABLE_TOP_GUTTER))
+  );
+  const inferredSourceSpanY = Math.max(1, inferredSourceMaxY - TABLE_TOP_GUTTER);
+
+  const normalized = rawCards.map(card => {
+    const savedXRatio = Number(card?.xRatio);
+    const savedYRatio = Number(card?.yRatio);
+    const hasRatios = Number.isFinite(savedXRatio) && Number.isFinite(savedYRatio);
+
+    const xRatio = hasRatios
+      ? clamp01(savedXRatio)
+      : inferredSourceMaxX > 0
+        ? clamp01((Number(card?.x) || 0) / inferredSourceMaxX)
+        : 0;
+    const yRatio = hasRatios
+      ? clamp01(savedYRatio)
+      : clamp01(
+          ((Number(card?.y) || TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER) / inferredSourceSpanY
+        );
+
+    return {
+      ...card,
+      x: bounds.maxX * xRatio,
+      y: TABLE_TOP_GUTTER + spanY * yRatio,
+      xRatio,
+      yRatio
+    };
+  });
+
+  const withInferredLinks = inferLegacySnapLinks(normalized);
+  return applySnapLinks(withInferredLinks, bounds);
+}
+
 function createCardInstances(cardList) {
   const { width: cardWidth } = getRuntimeCardSize();
   const gap = 20;
@@ -80,6 +272,8 @@ function createCardInstances(cardList) {
     instanceId: crypto.randomUUID(),
     x: startX + index * (cardWidth + gap),
     y: 260,
+    snappedToId: null,
+    snapEdge: null,
     previewSnap: false,
     zIndex: 1
   }));
@@ -301,7 +495,9 @@ export function useGameState(options = "default") {
   const [starterRevealState, setStarterRevealState] = useState(
     session.activeState.starterRevealState || null
   );
-  const [tableCards, setTableCards] = useState(session.activeState.tableCards || []);
+  const [tableCards, setTableCards] = useState(
+    resolveTableCardsFromSave(session.activeState.tableCards || [])
+  );
   const [binderCards, setBinderCards] = useState(session.activeState.binderCards || []);
   const [gp, setGp] = useState(session.activeState.gp || 0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -315,6 +511,7 @@ export function useGameState(options = "default") {
   const lastCloudPayloadRef = useRef("");
   const lastCloudUpdatedAtRef = useRef(0);
   const lastCloudPulseSavedRef = useRef(-1);
+  const lastLayoutBoundsRef = useRef(null);
   const stateVersionRef = useRef(Number(session.updatedAt) || 0);
   const skipNextVersionBumpRef = useRef(true);
   const hydrationCompleteRef = useRef(false);
@@ -372,34 +569,51 @@ export function useGameState(options = "default") {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
-    const clampCardsToViewport = () => {
-      const table = document.querySelector(".table");
-      const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
-      const tableWidth = table?.clientWidth || window.innerWidth;
-      const tableHeight = table?.clientHeight || Math.max(window.innerHeight, 700);
-      const maxY = Math.max(20, tableHeight - cardHeight - 20);
-      const maxX = Math.max(0, tableWidth - cardWidth);
+    const remapCardsToViewport = () => {
+      const { maxX, maxY } = getLayoutBounds();
+      const prevBounds = lastLayoutBoundsRef.current;
 
       setTableCards(prev => {
-        let changed = false;
+        if (!prev.length) {
+          lastLayoutBoundsRef.current = { maxX, maxY };
+          return prev;
+        }
 
-        const next = prev.map(card => {
-          const clampedX = Math.min(Math.max(card.x ?? 0, 0), maxX);
-          const clampedY = Math.min(maxY, Math.max(20, card.y ?? 20));
-          if (clampedX !== card.x || clampedY !== card.y) {
-            changed = true;
-            return { ...card, x: clampedX, y: clampedY };
+        const remapped = prev.map(card => {
+          let nextX = card.x ?? 0;
+          let nextY = card.y ?? 20;
+
+          if (prevBounds) {
+            const prevMaxX = Math.max(0, prevBounds.maxX ?? 0);
+            const prevSpanY = Math.max(1, (prevBounds.maxY ?? TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER);
+            const nextSpanY = Math.max(1, maxY - TABLE_TOP_GUTTER);
+            const xRatio = prevMaxX > 0 ? nextX / prevMaxX : 0;
+            const yRatio = (nextY - TABLE_TOP_GUTTER) / prevSpanY;
+            nextX = xRatio * maxX;
+            nextY = TABLE_TOP_GUTTER + yRatio * nextSpanY;
           }
-          return card;
+
+          const clampedX = Math.min(Math.max(nextX, 0), maxX);
+          const clampedY = Math.min(maxY, Math.max(TABLE_TOP_GUTTER, nextY));
+          return { ...card, x: clampedX, y: clampedY };
         });
+        const next = applySnapLinks(remapped, { maxX, maxY });
+        const changed = next.some(
+          (card, index) =>
+            card.x !== prev[index].x ||
+            card.y !== prev[index].y ||
+            card.snappedToId !== prev[index].snappedToId ||
+            card.snapEdge !== prev[index].snapEdge
+        );
+        lastLayoutBoundsRef.current = { maxX, maxY };
         return changed ? next : prev;
       });
     };
 
-    const handleResize = () => window.requestAnimationFrame(clampCardsToViewport);
+    const handleResize = () => window.requestAnimationFrame(remapCardsToViewport);
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleResize);
-    handleResize();
+    remapCardsToViewport();
 
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -416,7 +630,7 @@ export function useGameState(options = "default") {
     setMenuOpen(false);
     setBinderOpen(false);
     setGp(state?.gp || 0);
-    setTableCards(state?.tableCards || []);
+    setTableCards(resolveTableCardsFromSave(state?.tableCards || []));
     setBinderCards(state?.binderCards || []);
     setPackPools(normalizePackPools(state?.packPools));
     setZCounter(state?.zCounter || 1);
@@ -530,7 +744,15 @@ export function useGameState(options = "default") {
       stateVersionRef.current = Date.now();
       hasPendingCloudSaveRef.current = true;
     }
-    const runtimeState = { gp, starterRevealState, tableCards, binderCards, packPools, zCounter };
+    const linkedTableCards = applySnapLinks(tableCards);
+    const runtimeState = {
+      gp,
+      starterRevealState,
+      tableCards: normalizeTableCardsForSave(linkedTableCards),
+      binderCards,
+      packPools,
+      zCounter
+    };
     setProfiles(prev =>
       prev.map(profile =>
         profile.id === activeProfileId ? { ...profile, state: clone(runtimeState) } : profile
@@ -644,6 +866,8 @@ export function useGameState(options = "default") {
         instanceId: crypto.randomUUID(),
         x: (window.innerWidth - getRuntimeCardSize().width) / 2,
         y: 260,
+        snappedToId: null,
+        snapEdge: null,
         previewSnap: false,
         zIndex: nextZ
       }
@@ -670,7 +894,15 @@ export function useGameState(options = "default") {
   function depositToBinder(id) {
     const card = tableCards.find(c => c.instanceId === id);
     if (!card) return;
-    setTableCards(prev => prev.filter(c => c.instanceId !== id));
+    setTableCards(prev =>
+      prev
+        .filter(c => c.instanceId !== id)
+        .map(c =>
+          c.snappedToId === id
+            ? { ...c, snappedToId: null, snapEdge: null, previewSnap: false }
+            : c
+        )
+    );
     setBinderCards(prev => [...prev, card]);
   }
 
@@ -680,7 +912,10 @@ export function useGameState(options = "default") {
     const nextZ = zCounter + 1;
     setZCounter(nextZ);
     setBinderCards(prev => prev.filter(c => c.instanceId !== id));
-    setTableCards(prev => [...prev, { ...card, x: 400, y: 250, zIndex: nextZ }]);
+    setTableCards(prev => [
+      ...prev,
+      { ...card, x: 400, y: 250, zIndex: nextZ, snappedToId: null, snapEdge: null }
+    ]);
   }
 
   function debugResetRun() {
@@ -701,7 +936,9 @@ export function useGameState(options = "default") {
       return prev.map((card, index) => ({
         ...card,
         x: 140 + (index % columns) * 150,
-        y: 260 + Math.floor(index / columns) * 210
+        y: 260 + Math.floor(index / columns) * 210,
+        snappedToId: null,
+        snapEdge: null
       }));
     });
   }
@@ -735,6 +972,8 @@ export function useGameState(options = "default") {
         instanceId: crypto.randomUUID(),
         x: Math.max(0, ((typeof window !== "undefined" ? window.innerWidth : 1200) - cardWidth) / 2),
         y: 260,
+        snappedToId: null,
+        snapEdge: null,
         previewSnap: false,
         zIndex: nextZ
       }
@@ -772,7 +1011,18 @@ export function useGameState(options = "default") {
       return next;
     });
 
-    setTableCards(prev => prev.filter(card => card.id !== id));
+    setTableCards(prev => {
+      const removedIds = new Set(
+        prev.filter(card => card.id === id).map(card => card.instanceId)
+      );
+      return prev
+        .filter(card => card.id !== id)
+        .map(card =>
+          removedIds.has(card.snappedToId)
+            ? { ...card, snappedToId: null, snapEdge: null, previewSnap: false }
+            : card
+        );
+    });
     setBinderCards(prev => prev.filter(card => card.id !== id));
     return true;
   }
