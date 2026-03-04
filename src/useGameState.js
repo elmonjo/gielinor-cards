@@ -107,14 +107,12 @@ function offsetFromSnapEdge(edge, cardWidth, cardHeight) {
   }
 }
 
-function applySnapLinks(cardList, bounds = getLayoutBounds()) {
+function applySnapLinks(cardList) {
   const next = (cardList || []).map(card => ({ ...card }));
   if (!next.length) return next;
 
   const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
   const indexById = new Map(next.map((card, index) => [card.instanceId, index]));
-  const maxY = bounds.maxY;
-  const maxX = bounds.maxX;
 
   for (let pass = 0; pass < next.length; pass += 1) {
     let changed = false;
@@ -130,11 +128,11 @@ function applySnapLinks(cardList, bounds = getLayoutBounds()) {
       }
       const target = next[targetIndex];
       const offset = offsetFromSnapEdge(card.snapEdge, cardWidth, cardHeight);
-      const clampedX = Math.min(Math.max(target.x + offset.dx, 0), maxX);
-      const clampedY = Math.min(Math.max(target.y + offset.dy, TABLE_TOP_GUTTER), maxY);
-      if (card.x !== clampedX || card.y !== clampedY) {
-        card.x = clampedX;
-        card.y = clampedY;
+      const nextX = Math.max(target.x + offset.dx, 0);
+      const nextY = Math.max(target.y + offset.dy, TABLE_TOP_GUTTER);
+      if (card.x !== nextX || card.y !== nextY) {
+        card.x = nextX;
+        card.y = nextY;
         changed = true;
       }
     });
@@ -198,22 +196,16 @@ function inferLegacySnapLinks(cardList) {
 }
 
 function normalizeTableCardsForSave(cardList) {
-  const bounds = getLayoutBounds();
-  const spanY = Math.max(1, bounds.maxY - TABLE_TOP_GUTTER);
-
   return (cardList || []).map(card => {
     const rawX = Number(card?.x);
     const rawY = Number(card?.y);
-    const xRatio = bounds.maxX > 0 ? clamp01((Number.isFinite(rawX) ? rawX : 0) / bounds.maxX) : 0;
-    const yRatio = clamp01(
-      ((Number.isFinite(rawY) ? rawY : TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER) / spanY
-    );
+    const nextX = Math.max(Number.isFinite(rawX) ? rawX : 0, 0);
+    const nextY = Math.max(Number.isFinite(rawY) ? rawY : TABLE_TOP_GUTTER, TABLE_TOP_GUTTER);
+
     return {
       ...card,
-      x: bounds.maxX * xRatio,
-      y: TABLE_TOP_GUTTER + spanY * yRatio,
-      xRatio,
-      yRatio
+      x: nextX,
+      y: nextY
     };
   });
 }
@@ -222,43 +214,27 @@ function resolveTableCardsFromSave(cardList) {
   const bounds = getLayoutBounds();
   const spanY = Math.max(1, bounds.maxY - TABLE_TOP_GUTTER);
   const rawCards = cardList || [];
-  const inferredSourceMaxX = Math.max(
-    bounds.maxX,
-    ...rawCards.map(card => (Number.isFinite(Number(card?.x)) ? Number(card.x) : 0))
-  );
-  const inferredSourceMaxY = Math.max(
-    bounds.maxY,
-    ...rawCards.map(card => (Number.isFinite(Number(card?.y)) ? Number(card.y) : TABLE_TOP_GUTTER))
-  );
-  const inferredSourceSpanY = Math.max(1, inferredSourceMaxY - TABLE_TOP_GUTTER);
 
   const normalized = rawCards.map(card => {
     const savedXRatio = Number(card?.xRatio);
     const savedYRatio = Number(card?.yRatio);
-    const hasRatios = Number.isFinite(savedXRatio) && Number.isFinite(savedYRatio);
+    const rawX = Number(card?.x);
+    const rawY = Number(card?.y);
+    const hasRaw = Number.isFinite(rawX) && Number.isFinite(rawY);
+    const hasRatios = !hasRaw && Number.isFinite(savedXRatio) && Number.isFinite(savedYRatio);
 
-    const xRatio = hasRatios
-      ? clamp01(savedXRatio)
-      : inferredSourceMaxX > 0
-        ? clamp01((Number(card?.x) || 0) / inferredSourceMaxX)
-        : 0;
-    const yRatio = hasRatios
-      ? clamp01(savedYRatio)
-      : clamp01(
-          ((Number(card?.y) || TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER) / inferredSourceSpanY
-        );
+    const xRatio = hasRatios ? clamp01(savedXRatio) : 0;
+    const yRatio = hasRatios ? clamp01(savedYRatio) : 0;
 
     return {
       ...card,
-      x: bounds.maxX * xRatio,
-      y: TABLE_TOP_GUTTER + spanY * yRatio,
-      xRatio,
-      yRatio
+      x: hasRaw ? Math.max(rawX, 0) : bounds.maxX * xRatio,
+      y: hasRaw ? Math.max(rawY, TABLE_TOP_GUTTER) : TABLE_TOP_GUTTER + spanY * yRatio
     };
   });
 
   const withInferredLinks = inferLegacySnapLinks(normalized);
-  return applySnapLinks(withInferredLinks, bounds);
+  return applySnapLinks(withInferredLinks);
 }
 
 function createCardInstances(cardList) {
@@ -512,7 +488,6 @@ export function useGameState(options = "default") {
   const lastCloudPayloadRef = useRef("");
   const lastCloudUpdatedAtRef = useRef(0);
   const lastCloudPulseSavedRef = useRef(-1);
-  const lastLayoutBoundsRef = useRef(null);
   const stateVersionRef = useRef(Number(session.updatedAt) || 0);
   const skipNextVersionBumpRef = useRef(true);
   const hydrationCompleteRef = useRef(false);
@@ -571,34 +546,14 @@ export function useGameState(options = "default") {
     if (typeof window === "undefined") return undefined;
 
     const remapCardsToViewport = () => {
-      const { maxX, maxY } = getLayoutBounds();
-      const prevBounds = lastLayoutBoundsRef.current;
-
       setTableCards(prev => {
-        if (!prev.length) {
-          lastLayoutBoundsRef.current = { maxX, maxY };
-          return prev;
-        }
-
-        const remapped = prev.map(card => {
-          let nextX = card.x ?? 0;
-          let nextY = card.y ?? 20;
-
-          if (prevBounds) {
-            const prevMaxX = Math.max(0, prevBounds.maxX ?? 0);
-            const prevSpanY = Math.max(1, (prevBounds.maxY ?? TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER);
-            const nextSpanY = Math.max(1, maxY - TABLE_TOP_GUTTER);
-            const xRatio = prevMaxX > 0 ? nextX / prevMaxX : 0;
-            const yRatio = (nextY - TABLE_TOP_GUTTER) / prevSpanY;
-            nextX = xRatio * maxX;
-            nextY = TABLE_TOP_GUTTER + yRatio * nextSpanY;
-          }
-
-          const clampedX = Math.min(Math.max(nextX, 0), maxX);
-          const clampedY = Math.min(maxY, Math.max(TABLE_TOP_GUTTER, nextY));
-          return { ...card, x: clampedX, y: clampedY };
-        });
-        const next = applySnapLinks(remapped, { maxX, maxY });
+        if (!prev.length) return prev;
+        const remapped = prev.map(card => ({
+          ...card,
+          x: Math.max(Number(card?.x) || 0, 0),
+          y: Math.max(Number(card?.y) || TABLE_TOP_GUTTER, TABLE_TOP_GUTTER)
+        }));
+        const next = applySnapLinks(remapped);
         const changed = next.some(
           (card, index) =>
             card.x !== prev[index].x ||
@@ -606,7 +561,6 @@ export function useGameState(options = "default") {
             card.snappedToId !== prev[index].snappedToId ||
             card.snapEdge !== prev[index].snapEdge
         );
-        lastLayoutBoundsRef.current = { maxX, maxY };
         return changed ? next : prev;
       });
     };
