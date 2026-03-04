@@ -7,8 +7,9 @@ const CARD_HEIGHT_DESKTOP = 190;
 const CARD_WIDTH_MOBILE = 60;
 const CARD_HEIGHT_MOBILE = 88;
 const TABLE_TOP_GUTTER = 20;
-const EDGE_SCROLL_THRESHOLD = 56;
-const EDGE_SCROLL_STEP = 20;
+const MOBILE_LAYOUT_BREAKPOINT = 740;
+const EDGE_SCROLL_THRESHOLD = 80;
+const EDGE_SCROLL_MAX_STEP = 8;
 
 const clamp = (value, min, max) =>
   Math.min(Math.max(value, min), max);
@@ -42,12 +43,18 @@ export default function CardInstance({ card, game }) {
 
   const getCardDimensions = () => {
     const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+      typeof window !== "undefined" && window.innerWidth <= MOBILE_LAYOUT_BREAKPOINT;
     return {
       width: isMobile ? CARD_WIDTH_MOBILE : CARD_WIDTH_DESKTOP,
       height: isMobile ? CARD_HEIGHT_MOBILE : CARD_HEIGHT_DESKTOP
     };
+  };
+
+  const edgeScrollDelta = (distanceToEdge) => {
+    if (distanceToEdge >= EDGE_SCROLL_THRESHOLD) return 0;
+    const intensity = (EDGE_SCROLL_THRESHOLD - distanceToEdge) / EDGE_SCROLL_THRESHOLD;
+    const eased = intensity * intensity;
+    return Math.max(1, Math.round(eased * EDGE_SCROLL_MAX_STEP));
   };
 
   const autoPanMainAtEdge = (point) => {
@@ -59,15 +66,15 @@ export default function CardInstance({ card, game }) {
     let deltaY = 0;
 
     if (point.x > bounds.right - EDGE_SCROLL_THRESHOLD) {
-      deltaX = EDGE_SCROLL_STEP;
+      deltaX = edgeScrollDelta(bounds.right - point.x);
     } else if (point.x < bounds.left + EDGE_SCROLL_THRESHOLD) {
-      deltaX = -EDGE_SCROLL_STEP;
+      deltaX = -edgeScrollDelta(point.x - bounds.left);
     }
 
     if (point.y > bounds.bottom - EDGE_SCROLL_THRESHOLD) {
-      deltaY = EDGE_SCROLL_STEP;
+      deltaY = edgeScrollDelta(bounds.bottom - point.y);
     } else if (point.y < bounds.top + EDGE_SCROLL_THRESHOLD) {
-      deltaY = -EDGE_SCROLL_STEP;
+      deltaY = -edgeScrollDelta(point.y - bounds.top);
     }
 
     if (deltaX !== 0) {

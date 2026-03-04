@@ -4,6 +4,7 @@ import { cards } from "./database/cardCatalog";
 const STORAGE_KEY_PREFIX = "gielinor_runtime_profiles_v1";
 const LOCAL_BACKUP_LIMIT = 10;
 const TABLE_TOP_GUTTER = 20;
+const MOBILE_LAYOUT_BREAKPOINT = 740;
 
 const PACKS = [
   { name: "Novice", cost: 2500 },
@@ -65,8 +66,8 @@ function shuffle(items) {
 
 function getRuntimeCardSize() {
   if (typeof window === "undefined") return { width: 130, height: 190 };
-  const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-  return isTouchDevice ? { width: 60, height: 88 } : { width: 130, height: 190 };
+  const isMobileLayout = window.innerWidth <= MOBILE_LAYOUT_BREAKPOINT;
+  return isMobileLayout ? { width: 60, height: 88 } : { width: 130, height: 190 };
 }
 
 function getLayoutBounds() {

@@ -2,8 +2,7 @@ import CardInstance from "./CardInstance";
 
 export default function TableSurface({ game }) {
   const isMobile =
-    typeof window !== "undefined" &&
-    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    typeof window !== "undefined" && window.innerWidth <= 740;
   const CARD_WIDTH = isMobile ? 60 : 130;
   const CARD_HEIGHT = isMobile ? 88 : 190;
   const EXTRA_RIGHT_SPACE = 120;
