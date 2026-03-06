@@ -189,7 +189,7 @@
   { id:"training_shield", title:"Training Shield", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/training_shield.png" },
   { id:"training_bow", title:"Training Bow", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/training_bow.png" },
   { id:"amulet_of_rancour", title:"Amulet of Rancour", type:"gear", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/amulet_of_fury.png" },
-  { id:"steel_ring", title:"Steel Ring", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/ring_of_recoil.png" },
+  { id:"steel_ring", title:"Steel Ring", type:"gear", rarity:"common", path:"Novice", shiny:false, image:"/card-images/steel_ring.png" },
   { id:"zombie_axe", title:"Zombie Axe", type:"gear", rarity:"rare", path:"Experienced", shiny:false, image:"/card-images/dragon_scimitar.png" },
   { id:"burning_claws", title:"Burning Claws", type:"gear", rarity:"epic", path:"Master", shiny:true, image:"/card-images/dragon_claws.png" },
   { id:"noxious_halberd", title:"Noxious Halberd", type:"gear", rarity:"legendary", path:"Grandmaster", shiny:true, image:"/card-images/elder_maul.png" },

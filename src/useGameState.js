@@ -7,8 +7,8 @@ const TABLE_TOP_GUTTER = 20;
 const MOBILE_LAYOUT_BREAKPOINT = 740;
 
 const PACKS = [
-  { name: "Novice", cost: 2500 },
-  { name: "Intermediate", cost: 15000 },
+  { name: "Novice", cost: 1500 },
+  { name: "Intermediate", cost: 10000 },
   { name: "Experienced", cost: 50000 },
   { name: "Master", cost: 100000 },
   { name: "Grandmaster", cost: 200000 }
@@ -430,9 +430,16 @@ function cloudUrl(cloud) {
 }
 
 async function fetchCloudSession(cloud) {
-  const response = await fetch(cloudUrl(cloud));
-  if (!response.ok) return null;
-  return await response.json().catch(() => null);
+  try {
+    const response = await fetch(cloudUrl(cloud));
+    if (!response.ok) {
+      return { ok: false, status: response.status, data: null };
+    }
+    const data = await response.json().catch(() => null);
+    return { ok: true, status: response.status, data };
+  } catch {
+    return { ok: false, status: 0, data: null };
+  }
 }
 
 async function saveCloudSession(cloud, payload) {
@@ -504,18 +511,29 @@ export function useGameState(options = "default") {
     };
   }
 
-  async function flushCloudSave() {
+  async function flushCloudSave(options = {}) {
+    const force = Boolean(options?.force);
     if (!cloudEnabled || !cloudReady) {
       return { ok: true, skipped: true };
     }
     const payload = buildCloudPayload();
     const payloadText = JSON.stringify(payload);
-    if (!hasPendingCloudSaveRef.current && payloadText === lastCloudPayloadRef.current) {
+    if (!force && !hasPendingCloudSaveRef.current) {
+      return { ok: true, skipped: true };
+    }
+    if (payloadText === lastCloudPayloadRef.current) {
+      hasPendingCloudSaveRef.current = false;
       return { ok: true, skipped: true };
     }
 
     try {
-      const remoteState = await fetchCloudSession(cloudConfig).catch(() => null);
+      const remoteRead = await fetchCloudSession(cloudConfig);
+      if (!remoteRead.ok) {
+        const message = "Cloud read failed. Save paused to protect progress.";
+        setCloudSyncError(message);
+        return { ok: false, message };
+      }
+      const remoteState = remoteRead.data;
       const remoteUpdatedAt = Number(remoteState?.updatedAt) || 0;
       const localUpdatedAt = Number(payload.updatedAt) || 0;
       if (
@@ -606,8 +624,14 @@ export function useGameState(options = "default") {
       }
 
       try {
-        const remoteState = await fetchCloudSession(cloudConfig);
+        const remoteRead = await fetchCloudSession(cloudConfig);
         if (canceled) return;
+        if (!remoteRead.ok) {
+          setCloudSyncError("Cloud sync unavailable. Writes paused to protect progress.");
+          return;
+        }
+
+        const remoteState = remoteRead.data;
         if (remoteState) {
           const normalized = normalizeImportedProfiles(remoteState);
           if (normalized) {
@@ -626,19 +650,16 @@ export function useGameState(options = "default") {
             if (stateVersionRef.current <= 0) {
               stateVersionRef.current = Date.now();
             }
-            hasPendingCloudSaveRef.current = true;
           }
         } else {
           if (stateVersionRef.current <= 0) {
             stateVersionRef.current = Date.now();
           }
-          hasPendingCloudSaveRef.current = true;
         }
         setCloudSyncError("");
       } catch {
         if (!canceled) {
-          hasPendingCloudSaveRef.current = true;
-          setCloudSyncError("Cloud sync unavailable, using local save.");
+          setCloudSyncError("Cloud sync unavailable. Writes paused to protect progress.");
         }
       } finally {
         if (!canceled) {
@@ -754,10 +775,10 @@ export function useGameState(options = "default") {
 
   useEffect(() => {
     if (!cloudEnabled || !cloudReady) return;
+    if (!hasPendingCloudSaveRef.current) return;
     const payload = buildCloudPayload();
     const payloadText = JSON.stringify(payload);
     const isSamePayload = payloadText === lastCloudPayloadRef.current;
-    if (!hasPendingCloudSaveRef.current && isSamePayload) return;
     const autosaveAlreadyDoneThisPulse = lastCloudPulseSavedRef.current === cloudAutosavePulse;
     if (isSamePayload && autosaveAlreadyDoneThisPulse) return;
 
