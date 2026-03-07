@@ -92,6 +92,25 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
 
+function mostCommonValue(values, fallback) {
+  const counts = new Map();
+  values.forEach(value => {
+    if (!Number.isFinite(value) || value <= 0) return;
+    const key = Math.round(value);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+  if (!counts.size) return fallback;
+  let best = fallback;
+  let bestCount = -1;
+  counts.forEach((count, key) => {
+    if (count > bestCount) {
+      best = key;
+      bestCount = count;
+    }
+  });
+  return best;
+}
+
 function offsetFromSnapEdge(edge, cardWidth, cardHeight) {
   switch (edge) {
     case "right":
@@ -143,58 +162,6 @@ function applySnapLinks(cardList) {
   return next;
 }
 
-function inferLegacySnapLinks(cardList) {
-  const next = (cardList || []).map(card => ({ ...card }));
-  if (!next.length) return next;
-  const hasAnyLinks = next.some(card => card?.snappedToId && card?.snapEdge);
-  if (hasAnyLinks) return next;
-
-  const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
-  const tolerance = 2;
-
-  next.forEach((card, index) => {
-    const candidates = next.filter((_, candidateIndex) => candidateIndex !== index);
-    const target = candidates.find(other => {
-      const dx = (card.x ?? 0) - (other.x ?? 0);
-      const dy = (card.y ?? 0) - (other.y ?? 0);
-      const sameRow = Math.abs(dy) <= tolerance;
-      const sameCol = Math.abs(dx) <= tolerance;
-      return (
-        (sameRow && Math.abs(dx - cardWidth) <= tolerance) ||
-        (sameRow && Math.abs(dx + cardWidth) <= tolerance) ||
-        (sameCol && Math.abs(dy - cardHeight) <= tolerance) ||
-        (sameCol && Math.abs(dy + cardHeight) <= tolerance)
-      );
-    });
-
-    if (!target) return;
-
-    const dx = (card.x ?? 0) - (target.x ?? 0);
-    const dy = (card.y ?? 0) - (target.y ?? 0);
-    if (Math.abs(dy) <= tolerance && Math.abs(dx - cardWidth) <= tolerance) {
-      card.snappedToId = target.instanceId;
-      card.snapEdge = "right";
-      return;
-    }
-    if (Math.abs(dy) <= tolerance && Math.abs(dx + cardWidth) <= tolerance) {
-      card.snappedToId = target.instanceId;
-      card.snapEdge = "left";
-      return;
-    }
-    if (Math.abs(dx) <= tolerance && Math.abs(dy - cardHeight) <= tolerance) {
-      card.snappedToId = target.instanceId;
-      card.snapEdge = "bottom";
-      return;
-    }
-    if (Math.abs(dx) <= tolerance && Math.abs(dy + cardHeight) <= tolerance) {
-      card.snappedToId = target.instanceId;
-      card.snapEdge = "top";
-    }
-  });
-
-  return next;
-}
-
 function normalizeTableCardsForSave(cardList) {
   const runtimeSize = getRuntimeCardSize();
   return (cardList || []).map(card => {
@@ -224,6 +191,16 @@ function resolveTableCardsFromSave(cardList) {
   );
   const inferredLegacyWidth = rawMaxX > 900 ? 130 : 60;
   const inferredLegacyHeight = inferredLegacyWidth === 130 ? 190 : 88;
+  const savedGlobalWidth = mostCommonValue(
+    rawCards.map(card => Number(card?.layoutCardWidth)),
+    inferredLegacyWidth
+  );
+  const savedGlobalHeight = mostCommonValue(
+    rawCards.map(card => Number(card?.layoutCardHeight)),
+    inferredLegacyHeight
+  );
+  const scaleX = runtimeSize.width / savedGlobalWidth;
+  const scaleY = runtimeSize.height / savedGlobalHeight;
 
   const normalized = rawCards.map(card => {
     const savedXRatio = Number(card?.xRatio);
@@ -232,18 +209,6 @@ function resolveTableCardsFromSave(cardList) {
     const rawY = Number(card?.y);
     const hasRaw = Number.isFinite(rawX) && Number.isFinite(rawY);
     const hasRatios = !hasRaw && Number.isFinite(savedXRatio) && Number.isFinite(savedYRatio);
-    const savedWidthRaw = Number(card?.layoutCardWidth);
-    const savedHeightRaw = Number(card?.layoutCardHeight);
-    const savedWidth =
-      Number.isFinite(savedWidthRaw) && savedWidthRaw > 0
-        ? savedWidthRaw
-        : inferredLegacyWidth;
-    const savedHeight =
-      Number.isFinite(savedHeightRaw) && savedHeightRaw > 0
-        ? savedHeightRaw
-        : inferredLegacyHeight;
-    const scaleX = runtimeSize.width / savedWidth;
-    const scaleY = runtimeSize.height / savedHeight;
 
     const xRatio = hasRatios ? clamp01(savedXRatio) : 0;
     const yRatio = hasRatios ? clamp01(savedYRatio) : 0;
@@ -259,8 +224,7 @@ function resolveTableCardsFromSave(cardList) {
     };
   });
 
-  const withInferredLinks = inferLegacySnapLinks(normalized);
-  return applySnapLinks(withInferredLinks);
+  return applySnapLinks(normalized);
 }
 
 function createCardInstances(cardList) {
