@@ -42,6 +42,7 @@ export default function CardInstance({ card, game }) {
   const groupIdsRef = useRef([card.instanceId]);
   const groupStartPositionsRef = useRef(new Map());
   const detachSingleRef = useRef(false);
+  const detachedFromGroupRef = useRef(false);
   const touchHoldTimerRef = useRef(null);
   const touchDetachReadyRef = useRef(false);
   const catalogCard = allCards.find(entry => entry.id === card.id);
@@ -128,11 +129,11 @@ export default function CardInstance({ card, game }) {
   };
 
   const prepareDragState = (event, forceSingle) => {
-    const connectedGroupIds = forceSingle
-      ? [card.instanceId]
-      : getConnectedGroupIds(game.tableCards, card.instanceId);
+    const fullConnectedGroupIds = getConnectedGroupIds(game.tableCards, card.instanceId);
+    const connectedGroupIds = forceSingle ? [card.instanceId] : fullConnectedGroupIds;
     groupIdsRef.current = connectedGroupIds;
     detachSingleRef.current = forceSingle;
+    detachedFromGroupRef.current = forceSingle && fullConnectedGroupIds.length > 1;
     groupStartPositionsRef.current = new Map(
       game.tableCards
         .filter(entry => connectedGroupIds.includes(entry.instanceId))
@@ -276,6 +277,17 @@ export default function CardInstance({ card, game }) {
 
       return prev.map(c => {
         if (!groupIds.has(c.instanceId)) {
+          if (
+            detachedFromGroupRef.current &&
+            c.snappedToId === card.instanceId
+          ) {
+            return {
+              ...c,
+              snappedToId: null,
+              snapEdge: null,
+              previewSnap: false
+            };
+          }
           return { ...c, previewSnap: false };
         }
 
@@ -299,6 +311,8 @@ export default function CardInstance({ card, game }) {
         return nextCard;
       });
     });
+
+    detachedFromGroupRef.current = false;
 
     const dropZone = document.getElementById("binder-drop-zone");
     if (dropZone) {
