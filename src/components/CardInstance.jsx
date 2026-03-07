@@ -199,9 +199,12 @@ export default function CardInstance({ card, game }) {
       x: card.x,
       y: card.y
     };
-    const deltaX = newX - rootStart.x;
-    const deltaY = newY - rootStart.y;
     const groupIds = new Set(groupIdsRef.current);
+    const groupCards = game.tableCards.filter(entry => groupIds.has(entry.instanceId));
+    const minGroupX = Math.min(...groupCards.map(entry => entry.x ?? 0));
+    const minGroupY = Math.min(...groupCards.map(entry => entry.y ?? TABLE_TOP_GUTTER));
+    const deltaX = Math.max(-minGroupX, newX - rootStart.x);
+    const deltaY = Math.max(TABLE_TOP_GUTTER - minGroupY, newY - rootStart.y);
     const movingCard = { ...card, x: newX, y: newY };
     const externalCards = game.tableCards.filter(entry => !groupIds.has(entry.instanceId));
     const snapTarget = detectSnapTarget(movingCard, externalCards, width, height);
@@ -215,8 +218,8 @@ export default function CardInstance({ card, game }) {
           };
           const nextCard = {
             ...c,
-            x: Math.max(0, start.x + deltaX),
-            y: Math.max(TABLE_TOP_GUTTER, start.y + deltaY)
+            x: start.x + deltaX,
+            y: start.y + deltaY
           };
           if (groupIds.size === 1 && c.instanceId === card.instanceId) {
             nextCard.snappedToId = null;
