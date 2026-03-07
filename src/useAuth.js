@@ -134,6 +134,37 @@ async function firebaseAuthRequest(endpoint, body) {
   return { ok: true, data: json };
 }
 
+async function firebaseRefreshTokenRequest(refreshToken) {
+  const response = await fetch(
+    `https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken
+      }).toString()
+    }
+  );
+
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return {
+      ok: false,
+      code: json?.error?.message || "TOKEN_REFRESH_FAILED"
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      idToken: json?.id_token || "",
+      refreshToken: json?.refresh_token || "",
+      localId: json?.user_id || ""
+    }
+  };
+}
+
 export function useAuth() {
   const [users, setUsers] = useState(() => loadUsers());
   const [session, setSession] = useState(() => loadSession());
@@ -144,6 +175,55 @@ export function useAuth() {
   useEffect(() => saveUsers(users), [users]);
   useEffect(() => saveSession(session), [session]);
   useEffect(() => saveFirebaseSession(firebaseSession), [firebaseSession]);
+
+  useEffect(() => {
+    if (!CLOUD_ENABLED) return undefined;
+    if (!firebaseSession?.refreshToken) return undefined;
+
+    let canceled = false;
+
+    const refreshCloudToken = async () => {
+      const currentRefreshToken = firebaseSession.refreshToken;
+      if (!currentRefreshToken) return;
+
+      const result = await firebaseRefreshTokenRequest(currentRefreshToken);
+      if (canceled) return;
+
+      if (!result.ok) {
+        if (result.code === "INVALID_REFRESH_TOKEN" || result.code === "USER_DISABLED") {
+          setFirebaseSession(null);
+        }
+        return;
+      }
+
+      setFirebaseSession(prev => {
+        if (!prev) return prev;
+        if (prev.refreshToken !== currentRefreshToken) return prev;
+        return {
+          ...prev,
+          idToken: result.data.idToken || prev.idToken,
+          refreshToken: result.data.refreshToken || prev.refreshToken,
+          localId: result.data.localId || prev.localId
+        };
+      });
+    };
+
+    const interval = setInterval(refreshCloudToken, 45 * 60 * 1000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refreshCloudToken();
+      }
+    };
+
+    refreshCloudToken();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      canceled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [firebaseSession?.refreshToken]);
 
   const localUser = useMemo(() => {
     if (!session) return null;
