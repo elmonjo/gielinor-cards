@@ -7,11 +7,11 @@ const TABLE_TOP_GUTTER = 20;
 const MOBILE_LAYOUT_BREAKPOINT = 740;
 
 const PACKS = [
-  { name: "Novice", cost: 1500 },
-  { name: "Intermediate", cost: 10000 },
-  { name: "Experienced", cost: 50000 },
+  { name: "Novice", cost: 1000 },
+  { name: "Intermediate", cost: 5000 },
+  { name: "Experienced", cost: 20000 },
   { name: "Master", cost: 100000 },
-  { name: "Grandmaster", cost: 200000 }
+  { name: "Grandmaster", cost: 250000 }
 ];
 
 const LEGACY_PATH_MAP = {
