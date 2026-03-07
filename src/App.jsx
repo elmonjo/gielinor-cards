@@ -32,7 +32,7 @@ function GameApp({ auth }) {
   });
 
   return (
-    <div className="app">
+    <div className={`app ${game.menuOpen ? "menu-open" : ""}`}>
       <TopBar game={game} />
 
       <div className="main">
