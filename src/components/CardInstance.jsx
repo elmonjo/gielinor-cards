@@ -38,6 +38,8 @@ const getClientPoint = (event) => {
 export default function CardInstance({ card, game }) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const groupIdsRef = useRef([card.instanceId]);
+  const groupStartPositionsRef = useRef(new Map());
   const catalogCard = allCards.find(entry => entry.id === card.id);
   const imageSrc = catalogCard?.image || card.image;
 
@@ -90,11 +92,43 @@ export default function CardInstance({ card, game }) {
     }
   };
 
+  const getConnectedGroupIds = (cardsOnTable, rootId) => {
+    const connected = new Set([rootId]);
+    const queue = [rootId];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift();
+      const currentCard = cardsOnTable.find(entry => entry.instanceId === currentId);
+      const nextLinkedId = currentCard?.snappedToId;
+      if (nextLinkedId && !connected.has(nextLinkedId)) {
+        connected.add(nextLinkedId);
+        queue.push(nextLinkedId);
+      }
+
+      cardsOnTable.forEach(entry => {
+        if (entry.snappedToId !== currentId) return;
+        if (connected.has(entry.instanceId)) return;
+        connected.add(entry.instanceId);
+        queue.push(entry.instanceId);
+      });
+    }
+
+    return [...connected];
+  };
+
   const startDrag = (event) => {
     event.preventDefault();
     dragging.current = true;
 
     game.bringToFront(card.instanceId);
+
+    const connectedGroupIds = getConnectedGroupIds(game.tableCards, card.instanceId);
+    groupIdsRef.current = connectedGroupIds;
+    groupStartPositionsRef.current = new Map(
+      game.tableCards
+        .filter(entry => connectedGroupIds.includes(entry.instanceId))
+        .map(entry => [entry.instanceId, { x: entry.x, y: entry.y }])
+    );
 
     const table = document.querySelector(".table");
     const tableRect = table.getBoundingClientRect();
@@ -126,18 +160,34 @@ export default function CardInstance({ card, game }) {
     const rawY = point.y - tableRect.top - offset.current.y;
     const newX = clamp(rawX, 0, maxX);
     const newY = Math.max(TABLE_TOP_GUTTER, rawY);
-    const movingCard = {
-      ...card,
-      x: newX,
-      y: newY
+    const rootStart = groupStartPositionsRef.current.get(card.instanceId) || {
+      x: card.x,
+      y: card.y
     };
-
-    const snapTarget = detectSnapTarget(movingCard, game.tableCards, width, height);
+    const deltaX = newX - rootStart.x;
+    const deltaY = newY - rootStart.y;
+    const groupIds = new Set(groupIdsRef.current);
+    const movingCard = { ...card, x: newX, y: newY };
+    const externalCards = game.tableCards.filter(entry => !groupIds.has(entry.instanceId));
+    const snapTarget = detectSnapTarget(movingCard, externalCards, width, height);
 
     game.setTableCards(prev =>
       prev.map(c => {
-        if (c.instanceId === card.instanceId) {
-          return { ...c, x: newX, y: newY, snappedToId: null, snapEdge: null };
+        if (groupIds.has(c.instanceId)) {
+          const start = groupStartPositionsRef.current.get(c.instanceId) || {
+            x: c.x,
+            y: c.y
+          };
+          const nextCard = {
+            ...c,
+            x: Math.max(0, start.x + deltaX),
+            y: Math.max(TABLE_TOP_GUTTER, start.y + deltaY)
+          };
+          if (groupIds.size === 1 && c.instanceId === card.instanceId) {
+            nextCard.snappedToId = null;
+            nextCard.snapEdge = null;
+          }
+          return nextCard;
         }
 
         return {
@@ -178,22 +228,36 @@ export default function CardInstance({ card, game }) {
       if (!moving) return prev;
 
       const { width, height } = getCardDimensions();
-      const snap = resolveSnap(moving, prev, width, height);
-      const snapped = snap
-        ? {
-            ...moving,
-            x: snap.x,
-            y: snap.y,
-            snappedToId: snap.targetId,
-            snapEdge: snap.edge
-          }
-        : { ...moving, snappedToId: null, snapEdge: null };
+      const groupIds = new Set(groupIdsRef.current);
+      const externalCards = prev.filter(entry => !groupIds.has(entry.instanceId));
+      const snap = resolveSnap(moving, externalCards, width, height);
+      const deltaX = snap ? snap.x - moving.x : 0;
+      const deltaY = snap ? snap.y - moving.y : 0;
 
-      return prev.map(c =>
-        c.instanceId === card.instanceId
-          ? { ...snapped, previewSnap: false }
-          : { ...c, previewSnap: false }
-      );
+      return prev.map(c => {
+        if (!groupIds.has(c.instanceId)) {
+          return { ...c, previewSnap: false };
+        }
+
+        const nextCard = {
+          ...c,
+          x: c.x + deltaX,
+          y: c.y + deltaY,
+          previewSnap: false
+        };
+
+        if (groupIds.size === 1 && c.instanceId === card.instanceId) {
+          if (snap) {
+            nextCard.snappedToId = snap.targetId;
+            nextCard.snapEdge = snap.edge;
+          } else {
+            nextCard.snappedToId = null;
+            nextCard.snapEdge = null;
+          }
+        }
+
+        return nextCard;
+      });
     });
 
     const dropZone = document.getElementById("binder-drop-zone");
