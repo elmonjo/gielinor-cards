@@ -196,6 +196,7 @@ function inferLegacySnapLinks(cardList) {
 }
 
 function normalizeTableCardsForSave(cardList) {
+  const runtimeSize = getRuntimeCardSize();
   return (cardList || []).map(card => {
     const rawX = Number(card?.x);
     const rawY = Number(card?.y);
@@ -205,7 +206,9 @@ function normalizeTableCardsForSave(cardList) {
     return {
       ...card,
       x: nextX,
-      y: nextY
+      y: nextY,
+      layoutCardWidth: runtimeSize.width,
+      layoutCardHeight: runtimeSize.height
     };
   });
 }
@@ -214,6 +217,13 @@ function resolveTableCardsFromSave(cardList) {
   const bounds = getLayoutBounds();
   const spanY = Math.max(1, bounds.maxY - TABLE_TOP_GUTTER);
   const rawCards = cardList || [];
+  const runtimeSize = getRuntimeCardSize();
+  const rawMaxX = Math.max(
+    0,
+    ...rawCards.map(card => (Number.isFinite(Number(card?.x)) ? Number(card.x) : 0))
+  );
+  const inferredLegacyWidth = rawMaxX > 900 ? 130 : 60;
+  const inferredLegacyHeight = inferredLegacyWidth === 130 ? 190 : 88;
 
   const normalized = rawCards.map(card => {
     const savedXRatio = Number(card?.xRatio);
@@ -222,14 +232,30 @@ function resolveTableCardsFromSave(cardList) {
     const rawY = Number(card?.y);
     const hasRaw = Number.isFinite(rawX) && Number.isFinite(rawY);
     const hasRatios = !hasRaw && Number.isFinite(savedXRatio) && Number.isFinite(savedYRatio);
+    const savedWidthRaw = Number(card?.layoutCardWidth);
+    const savedHeightRaw = Number(card?.layoutCardHeight);
+    const savedWidth =
+      Number.isFinite(savedWidthRaw) && savedWidthRaw > 0
+        ? savedWidthRaw
+        : inferredLegacyWidth;
+    const savedHeight =
+      Number.isFinite(savedHeightRaw) && savedHeightRaw > 0
+        ? savedHeightRaw
+        : inferredLegacyHeight;
+    const scaleX = runtimeSize.width / savedWidth;
+    const scaleY = runtimeSize.height / savedHeight;
 
     const xRatio = hasRatios ? clamp01(savedXRatio) : 0;
     const yRatio = hasRatios ? clamp01(savedYRatio) : 0;
 
     return {
       ...card,
-      x: hasRaw ? Math.max(rawX, 0) : bounds.maxX * xRatio,
-      y: hasRaw ? Math.max(rawY, TABLE_TOP_GUTTER) : TABLE_TOP_GUTTER + spanY * yRatio
+      x: hasRaw ? Math.max(rawX * scaleX, 0) : bounds.maxX * xRatio,
+      y: hasRaw
+        ? Math.max(TABLE_TOP_GUTTER + (rawY - TABLE_TOP_GUTTER) * scaleY, TABLE_TOP_GUTTER)
+        : TABLE_TOP_GUTTER + spanY * yRatio,
+      layoutCardWidth: runtimeSize.width,
+      layoutCardHeight: runtimeSize.height
     };
   });
 
@@ -496,6 +522,7 @@ export function useGameState(options = "default") {
   const lastCloudUpdatedAtRef = useRef(0);
   const lastCloudPulseSavedRef = useRef(-1);
   const stateVersionRef = useRef(Number(session.updatedAt) || 0);
+  const lastCardSizeRef = useRef(getRuntimeCardSize());
   const skipNextVersionBumpRef = useRef(true);
   const hydrationCompleteRef = useRef(false);
   const hasPendingCloudSaveRef = useRef(false);
@@ -564,12 +591,26 @@ export function useGameState(options = "default") {
     if (typeof window === "undefined") return undefined;
 
     const remapCardsToViewport = () => {
+      const runtimeSize = getRuntimeCardSize();
+      const previousSize = lastCardSizeRef.current || runtimeSize;
+      const widthScale =
+        previousSize.width > 0 ? runtimeSize.width / previousSize.width : 1;
+      const heightScale =
+        previousSize.height > 0 ? runtimeSize.height / previousSize.height : 1;
+      lastCardSizeRef.current = runtimeSize;
+
       setTableCards(prev => {
         if (!prev.length) return prev;
         const remapped = prev.map(card => ({
           ...card,
-          x: Math.max(Number(card?.x) || 0, 0),
-          y: Math.max(Number(card?.y) || TABLE_TOP_GUTTER, TABLE_TOP_GUTTER)
+          x: Math.max((Number(card?.x) || 0) * widthScale, 0),
+          y: Math.max(
+            TABLE_TOP_GUTTER +
+              ((Number(card?.y) || TABLE_TOP_GUTTER) - TABLE_TOP_GUTTER) * heightScale,
+            TABLE_TOP_GUTTER
+          ),
+          layoutCardWidth: runtimeSize.width,
+          layoutCardHeight: runtimeSize.height
         }));
         const next = applySnapLinks(remapped);
         const changed = next.some(
