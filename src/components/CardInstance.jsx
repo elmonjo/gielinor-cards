@@ -10,6 +10,7 @@ const TABLE_TOP_GUTTER = 20;
 const MOBILE_LAYOUT_BREAKPOINT = 740;
 const EDGE_SCROLL_THRESHOLD = 80;
 const EDGE_SCROLL_MAX_STEP = 6;
+const MOBILE_DETACH_HOLD_MS = 300;
 
 const clamp = (value, min, max) =>
   Math.min(Math.max(value, min), max);
@@ -40,6 +41,9 @@ export default function CardInstance({ card, game }) {
   const offset = useRef({ x: 0, y: 0 });
   const groupIdsRef = useRef([card.instanceId]);
   const groupStartPositionsRef = useRef(new Map());
+  const detachSingleRef = useRef(false);
+  const touchHoldTimerRef = useRef(null);
+  const touchDetachReadyRef = useRef(false);
   const catalogCard = allCards.find(entry => entry.id === card.id);
   const imageSrc = catalogCard?.image || card.image;
 
@@ -116,14 +120,19 @@ export default function CardInstance({ card, game }) {
     return [...connected];
   };
 
-  const startDrag = (event) => {
-    event.preventDefault();
-    dragging.current = true;
+  const clearTouchHoldTimer = () => {
+    if (touchHoldTimerRef.current) {
+      window.clearTimeout(touchHoldTimerRef.current);
+      touchHoldTimerRef.current = null;
+    }
+  };
 
-    game.bringToFront(card.instanceId);
-
-    const connectedGroupIds = getConnectedGroupIds(game.tableCards, card.instanceId);
+  const prepareDragState = (event, forceSingle) => {
+    const connectedGroupIds = forceSingle
+      ? [card.instanceId]
+      : getConnectedGroupIds(game.tableCards, card.instanceId);
     groupIdsRef.current = connectedGroupIds;
+    detachSingleRef.current = forceSingle;
     groupStartPositionsRef.current = new Map(
       game.tableCards
         .filter(entry => connectedGroupIds.includes(entry.instanceId))
@@ -138,6 +147,23 @@ export default function CardInstance({ card, game }) {
       x: point.x - tableRect.left - card.x,
       y: point.y - tableRect.top - card.y
     };
+  };
+
+  const startDrag = (event) => {
+    event.preventDefault();
+    dragging.current = true;
+
+    game.bringToFront(card.instanceId);
+    const isTouchStart = Boolean(event.touches);
+    touchDetachReadyRef.current = false;
+    clearTouchHoldTimer();
+    if (isTouchStart) {
+      touchHoldTimerRef.current = window.setTimeout(() => {
+        touchDetachReadyRef.current = true;
+      }, MOBILE_DETACH_HOLD_MS);
+    }
+
+    prepareDragState(event, Boolean(event.altKey));
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
@@ -148,6 +174,15 @@ export default function CardInstance({ card, game }) {
 
   const updateDrag = (event) => {
     if (!dragging.current) return;
+
+    if (event.type === "touchmove") {
+      if (touchDetachReadyRef.current && !detachSingleRef.current) {
+        prepareDragState(event, true);
+      }
+      if (!touchDetachReadyRef.current) {
+        clearTouchHoldTimer();
+      }
+    }
 
     const point = getClientPoint(event);
     autoPanMainAtEdge(point);
@@ -214,6 +249,8 @@ export default function CardInstance({ card, game }) {
   const finishDrag = (event) => {
     if (!dragging.current) return;
     dragging.current = false;
+    clearTouchHoldTimer();
+    touchDetachReadyRef.current = false;
 
     window.removeEventListener("mousemove", onMouseMove);
     window.removeEventListener("mouseup", onMouseUp);
