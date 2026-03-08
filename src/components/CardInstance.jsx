@@ -14,6 +14,31 @@ const EDGE_SCROLL_MAX_STEP = 6;
 const clamp = (value, min, max) =>
   Math.min(Math.max(value, min), max);
 
+const collectScrollableAncestors = (element) => {
+  const nodes = [];
+  let current = element?.parentElement || null;
+
+  while (current) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+    const overflowX = style.overflowX;
+    const canScrollY =
+      (overflowY === "auto" || overflowY === "scroll") &&
+      current.scrollHeight > current.clientHeight;
+    const canScrollX =
+      (overflowX === "auto" || overflowX === "scroll") &&
+      current.scrollWidth > current.clientWidth;
+
+    if (canScrollY || canScrollX) {
+      nodes.push(current);
+    }
+
+    current = current.parentElement;
+  }
+
+  return nodes;
+};
+
 const getClientPoint = (event) => {
   if (event.touches && event.touches.length > 0) {
     return {
@@ -79,6 +104,14 @@ export default function CardInstance({ card, game }) {
 
   const autoPanMainAtEdge = (point) => {
     const main = document.querySelector(".main");
+    const table = document.querySelector(".table");
+    const scrollContainers = [
+      ...new Set([
+        main,
+        ...collectScrollableAncestors(table),
+        document.scrollingElement
+      ].filter(Boolean))
+    ];
     let deltaX = 0;
     let deltaY = 0;
 
@@ -98,17 +131,17 @@ export default function CardInstance({ card, game }) {
       }
     }
 
-    if (main && deltaX !== 0) {
-      const maxScrollLeft = Math.max(0, main.scrollWidth - main.clientWidth);
-      const nextLeft = clamp(main.scrollLeft + deltaX, 0, maxScrollLeft);
-      main.scrollLeft = nextLeft;
-    }
+    scrollContainers.forEach(container => {
+      if (deltaX !== 0 && container.scrollWidth > container.clientWidth) {
+        const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+        container.scrollLeft = clamp(container.scrollLeft + deltaX, 0, maxScrollLeft);
+      }
 
-    if (main && deltaY !== 0) {
-      const maxScrollTop = Math.max(0, main.scrollHeight - main.clientHeight);
-      const nextTop = clamp(main.scrollTop + deltaY, 0, maxScrollTop);
-      main.scrollTop = nextTop;
-    }
+      if (deltaY !== 0 && container.scrollHeight > container.clientHeight) {
+        const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+        container.scrollTop = clamp(container.scrollTop + deltaY, 0, maxScrollTop);
+      }
+    });
 
     const viewportHeight =
       typeof window !== "undefined" ? window.innerHeight : 0;
