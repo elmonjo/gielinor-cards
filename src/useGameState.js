@@ -162,6 +162,41 @@ function applySnapLinks(cardList) {
   return next;
 }
 
+function keepOnlyAlignedSnapLinks(cardList) {
+  const next = (cardList || []).map(card => ({ ...card }));
+  if (!next.length) return next;
+
+  const { width: cardWidth, height: cardHeight } = getRuntimeCardSize();
+  const indexById = new Map(next.map((card, index) => [card.instanceId, index]));
+  const toleranceX = Math.max(10, Math.round(cardWidth * 0.35));
+  const toleranceY = Math.max(10, Math.round(cardHeight * 0.35));
+
+  next.forEach(card => {
+    if (!card?.snappedToId || !card?.snapEdge) return;
+
+    const targetIndex = indexById.get(card.snappedToId);
+    if (targetIndex == null) {
+      card.snappedToId = null;
+      card.snapEdge = null;
+      return;
+    }
+
+    const target = next[targetIndex];
+    const offset = offsetFromSnapEdge(card.snapEdge, cardWidth, cardHeight);
+    const expectedX = Math.max(target.x + offset.dx, 0);
+    const expectedY = Math.max(target.y + offset.dy, TABLE_TOP_GUTTER);
+    const deltaX = Math.abs((Number(card.x) || 0) - expectedX);
+    const deltaY = Math.abs((Number(card.y) || TABLE_TOP_GUTTER) - expectedY);
+
+    if (deltaX > toleranceX || deltaY > toleranceY) {
+      card.snappedToId = null;
+      card.snapEdge = null;
+    }
+  });
+
+  return next;
+}
+
 function normalizeTableCardsForSave(cardList) {
   const runtimeSize = getRuntimeCardSize();
   return (cardList || []).map(card => {
@@ -224,7 +259,7 @@ function resolveTableCardsFromSave(cardList) {
     };
   });
 
-  return applySnapLinks(normalized);
+  return applySnapLinks(keepOnlyAlignedSnapLinks(normalized));
 }
 
 function createCardInstances(cardList) {
