@@ -308,7 +308,7 @@ select {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 100;
+  z-index: 53000;
   box-shadow: var(--shadow-1);
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
@@ -1447,7 +1447,7 @@ select {
     bottom: 10px;
     top: auto;
     transform: none;
-    z-index: 1100;
+    z-index: 53000;
   }
 
   .binder-icon:hover {
