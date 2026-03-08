@@ -57,6 +57,7 @@ export default function CardInstance({ card, game }) {
   const offset = useRef({ x: 0, y: 0 });
   const catalogCard = allCards.find(entry => entry.id === card.id);
   const imageSrc = catalogCard?.image || card.image;
+  const packPath = catalogCard?.path || card.path;
 
   const getCardDimensions = () => {
     const isMobile =
@@ -253,7 +254,7 @@ export default function CardInstance({ card, game }) {
         zIndex: card.zIndex
       }}
     >
-      <div className={`gc-card ${packGlowClass(card.path)}`}>
+      <div className={`gc-card ${packGlowClass(packPath)}`}>
         <div className="gc-head">
           <div className="gc-title">{card.title}</div>
 
