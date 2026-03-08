@@ -354,10 +354,21 @@ select {
   background: rgba(8, 5, 3, 0.84);
   backdrop-filter: blur(3px);
   z-index: 1200;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+}
+
+.binder-open .main,
+.binder-open .top-bar {
+  position: relative;
+  z-index: 0;
+}
+
+.binder-open .card-instance {
+  pointer-events: none;
 }
 
 .binder-panel {
