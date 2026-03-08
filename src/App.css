@@ -353,7 +353,7 @@ select {
   inset: 0;
   background: rgba(8, 5, 3, 0.84);
   backdrop-filter: blur(3px);
-  z-index: 1200;
+  z-index: 50000;
   isolation: isolate;
   display: flex;
   align-items: center;
@@ -881,7 +881,7 @@ select {
   inset: 0;
   background: rgba(10, 6, 3, 0.8);
   backdrop-filter: blur(3px);
-  z-index: 1300;
+  z-index: 51000;
   isolation: isolate;
   display: flex;
   align-items: flex-start;
@@ -987,7 +987,7 @@ select {
   inset: 0;
   background: rgba(10, 6, 3, 0.78);
   backdrop-filter: blur(2px);
-  z-index: 1400;
+  z-index: 52000;
   display: flex;
   align-items: center;
   justify-content: center;
