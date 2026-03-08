@@ -569,12 +569,12 @@ select {
 }
 
 .gc-card--pack-intermediate {
-  --pack-surface-top: #cbd3c2;
-  --pack-surface-bottom: #afb9a2;
-  --pack-head-top: #495147;
-  --pack-head-bottom: #333932;
-  --pack-art-top: #bcc7b5;
-  --pack-art-bottom: #9eab95;
+  --pack-surface-top: #b6c0aa;
+  --pack-surface-bottom: #8f9a80;
+  --pack-head-top: #42513d;
+  --pack-head-bottom: #2d3829;
+  --pack-art-top: #a8b59d;
+  --pack-art-bottom: #7f8d73;
 }
 
 .gc-card--pack-experienced {
