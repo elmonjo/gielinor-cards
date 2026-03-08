@@ -170,6 +170,47 @@ export default function CardInstance({ card, game }) {
     }
   };
 
+  const updateDragAtPoint = (point) => {
+    const table = document.querySelector(".table");
+    if (!table) return;
+
+    const tableRect = table.getBoundingClientRect();
+    const { width, height } = getCardDimensions();
+    const maxX = Math.max(0, tableRect.width - width);
+    const rawX = point.x - tableRect.left - offset.current.x;
+    const rawY = point.y - tableRect.top - offset.current.y;
+    const newX = clamp(rawX, 0, maxX);
+    const newY = Math.max(TABLE_TOP_GUTTER, rawY);
+    const movingCard = { ...card, x: newX, y: newY };
+    const snapTarget = detectSnapTarget(movingCard, game.tableCards, width, height);
+
+    game.setTableCards(prev =>
+      prev.map(c => {
+        if (c.instanceId === card.instanceId) {
+          return { ...c, x: newX, y: newY, snappedToId: null, snapEdge: null };
+        }
+
+        return {
+          ...c,
+          previewSnap: c.instanceId === snapTarget
+        };
+      })
+    );
+
+    const dropZone = document.getElementById("binder-drop-zone");
+    if (dropZone) {
+      const rect = dropZone.getBoundingClientRect();
+
+      const hovering =
+        point.x >= rect.left &&
+        point.x <= rect.right &&
+        point.y >= rect.top &&
+        point.y <= rect.bottom;
+
+      dropZone.classList.toggle("binder-hover", hovering);
+    }
+  };
+
   const runAutoPanLoop = () => {
     if (!dragging.current || !autoPanPoint.current) {
       autoPanFrame.current = 0;
@@ -177,6 +218,7 @@ export default function CardInstance({ card, game }) {
     }
 
     autoPanMainAtEdge(autoPanPoint.current);
+    updateDragAtPoint(autoPanPoint.current);
     autoPanFrame.current = window.requestAnimationFrame(runAutoPanLoop);
   };
 
@@ -213,43 +255,7 @@ export default function CardInstance({ card, game }) {
 
     const point = getClientPoint(event);
     queueAutoPan(point);
-
-    const table = document.querySelector(".table");
-    const tableRect = table.getBoundingClientRect();
-    const { width, height } = getCardDimensions();
-    const maxX = Math.max(0, tableRect.width - width);
-    const rawX = point.x - tableRect.left - offset.current.x;
-    const rawY = point.y - tableRect.top - offset.current.y;
-    const newX = clamp(rawX, 0, maxX);
-    const newY = Math.max(TABLE_TOP_GUTTER, rawY);
-    const movingCard = { ...card, x: newX, y: newY };
-    const snapTarget = detectSnapTarget(movingCard, game.tableCards, width, height);
-
-    game.setTableCards(prev =>
-      prev.map(c => {
-        if (c.instanceId === card.instanceId) {
-          return { ...c, x: newX, y: newY, snappedToId: null, snapEdge: null };
-        }
-
-        return {
-          ...c,
-          previewSnap: c.instanceId === snapTarget
-        };
-      })
-    );
-
-    const dropZone = document.getElementById("binder-drop-zone");
-    if (dropZone) {
-      const rect = dropZone.getBoundingClientRect();
-
-      const hovering =
-        point.x >= rect.left &&
-        point.x <= rect.right &&
-        point.y >= rect.top &&
-        point.y <= rect.bottom;
-
-      dropZone.classList.toggle("binder-hover", hovering);
-    }
+    updateDragAtPoint(point);
   };
 
   const finishDrag = (event) => {
