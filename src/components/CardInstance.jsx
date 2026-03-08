@@ -10,6 +10,8 @@ const TABLE_TOP_GUTTER = 20;
 const MOBILE_LAYOUT_BREAKPOINT = 740;
 const EDGE_SCROLL_THRESHOLD = 80;
 const EDGE_SCROLL_MAX_STEP = 6;
+const VERTICAL_EDGE_SCROLL_THRESHOLD = 36;
+const VERTICAL_EDGE_SCROLL_MAX_STEP = 3;
 
 const clamp = (value, min, max) =>
   Math.min(Math.max(value, min), max);
@@ -102,6 +104,14 @@ export default function CardInstance({ card, game }) {
     return Math.max(1, Math.round(eased * EDGE_SCROLL_MAX_STEP));
   };
 
+  const verticalEdgeScrollDelta = (distanceToEdge) => {
+    if (distanceToEdge >= VERTICAL_EDGE_SCROLL_THRESHOLD) return 0;
+    const intensity =
+      (VERTICAL_EDGE_SCROLL_THRESHOLD - distanceToEdge) / VERTICAL_EDGE_SCROLL_THRESHOLD;
+    const eased = intensity * intensity;
+    return Math.max(1, Math.round(eased * VERTICAL_EDGE_SCROLL_MAX_STEP));
+  };
+
   const autoPanMainAtEdge = (point) => {
     const main = document.querySelector(".main");
     const table = document.querySelector(".table");
@@ -129,10 +139,10 @@ export default function CardInstance({ card, game }) {
     const viewportHeight =
       typeof window !== "undefined" ? window.innerHeight : 0;
     if (viewportHeight > 0) {
-      if (point.y > viewportHeight - EDGE_SCROLL_THRESHOLD) {
-        deltaY = edgeScrollDelta(viewportHeight - point.y);
-      } else if (point.y < EDGE_SCROLL_THRESHOLD) {
-        deltaY = -edgeScrollDelta(point.y);
+      if (point.y > viewportHeight - VERTICAL_EDGE_SCROLL_THRESHOLD) {
+        deltaY = verticalEdgeScrollDelta(viewportHeight - point.y);
+      } else if (point.y < VERTICAL_EDGE_SCROLL_THRESHOLD) {
+        deltaY = -verticalEdgeScrollDelta(point.y);
       }
     }
 
