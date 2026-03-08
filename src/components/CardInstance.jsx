@@ -124,10 +124,15 @@ export default function CardInstance({ card, game }) {
         deltaX = -edgeScrollDelta(point.x - bounds.left);
       }
 
-      if (point.y > bounds.bottom - EDGE_SCROLL_THRESHOLD) {
-        deltaY = edgeScrollDelta(bounds.bottom - point.y);
-      } else if (point.y < bounds.top + EDGE_SCROLL_THRESHOLD) {
-        deltaY = -edgeScrollDelta(point.y - bounds.top);
+    }
+
+    const viewportHeight =
+      typeof window !== "undefined" ? window.innerHeight : 0;
+    if (viewportHeight > 0) {
+      if (point.y > viewportHeight - EDGE_SCROLL_THRESHOLD) {
+        deltaY = edgeScrollDelta(viewportHeight - point.y);
+      } else if (point.y < EDGE_SCROLL_THRESHOLD) {
+        deltaY = -edgeScrollDelta(point.y);
       }
     }
 
@@ -142,24 +147,6 @@ export default function CardInstance({ card, game }) {
         container.scrollTop = clamp(container.scrollTop + deltaY, 0, maxScrollTop);
       }
     });
-
-    const viewportHeight =
-      typeof window !== "undefined" ? window.innerHeight : 0;
-    if (!viewportHeight) return;
-
-    let pageDeltaY = 0;
-    if (point.y > viewportHeight - EDGE_SCROLL_THRESHOLD) {
-      pageDeltaY = edgeScrollDelta(viewportHeight - point.y);
-    } else if (point.y < EDGE_SCROLL_THRESHOLD) {
-      pageDeltaY = -edgeScrollDelta(point.y);
-    }
-
-    if (pageDeltaY !== 0) {
-      const scrollRoot = document.scrollingElement || document.documentElement;
-      const maxPageScroll = Math.max(0, scrollRoot.scrollHeight - viewportHeight);
-      const nextScrollTop = clamp(window.scrollY + pageDeltaY, 0, maxPageScroll);
-      window.scrollTo(window.scrollX, nextScrollTop);
-    }
   };
 
   const stopAutoPanLoop = () => {
