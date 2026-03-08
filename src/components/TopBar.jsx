@@ -63,6 +63,9 @@ export default function TopBar({ game }) {
               <div className="pack-price">
                 {pack.cost.toLocaleString()} GP
               </div>
+              <div className="pack-remaining">
+                {cardsLeft} left
+              </div>
               {isExhausted && (
                 <div className="pack-stamp">COMPLETED</div>
               )}

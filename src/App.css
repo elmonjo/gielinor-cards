@@ -214,6 +214,15 @@ select {
   letter-spacing: 0.04em;
   color: #f0d99b;
   margin-top: auto;
+  padding-bottom: 2px;
+}
+
+.pack-remaining {
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #d6c49a;
   padding-bottom: 6px;
 }
 
@@ -775,6 +784,12 @@ select {
     font-size: 8px;
     letter-spacing: 0;
     padding-bottom: 0;
+  }
+
+  .pack-remaining {
+    font-size: 6px;
+    letter-spacing: 0;
+    padding-bottom: 2px;
   }
 
   .pack-stamp {
@@ -1354,6 +1369,11 @@ select {
     padding-bottom: 0;
   }
 
+  .pack-remaining {
+    font-size: 6px;
+    padding-bottom: 1px;
+  }
+
   .pack-stamp {
     font-size: 6px;
     border-width: 1px;
@@ -1545,6 +1565,10 @@ select {
 
   .pack-price {
     font-size: 8px;
+  }
+
+  .pack-remaining {
+    font-size: 6px;
   }
 
   .gc-card {
