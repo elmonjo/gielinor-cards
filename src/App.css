@@ -530,14 +530,16 @@ select {
 /* Cards */
 .gc-card {
   --pack-glow: rgba(255, 255, 255, 0);
+  position: relative;
   width: 130px;
   height: 190px;
   background:
     linear-gradient(180deg, #ebe3cd 0%, #d7c8a6 100%);
   border: 3px solid #8e743d;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--pack-glow) 42%, transparent),
-    0 0 18px color-mix(in srgb, var(--pack-glow) 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--pack-glow) 68%, #ffffff 6%),
+    0 0 0 2px color-mix(in srgb, var(--pack-glow) 38%, transparent),
+    0 0 26px color-mix(in srgb, var(--pack-glow) 44%, transparent),
     var(--shadow-1);
   border-radius: 7px;
   padding: 6px;
@@ -549,6 +551,19 @@ select {
   font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
   color: #1a1a1a;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.gc-card::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pack-glow) 78%, white 12%);
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .gc-card--pack-novice {
@@ -656,8 +671,9 @@ select {
 .card-instance:not(.dragging) .gc-card:hover {
   transform: translateY(-6px);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--pack-glow) 52%, transparent),
-    0 0 24px color-mix(in srgb, var(--pack-glow) 38%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--pack-glow) 82%, #ffffff 10%),
+    0 0 0 2px color-mix(in srgb, var(--pack-glow) 50%, transparent),
+    0 0 34px color-mix(in srgb, var(--pack-glow) 58%, transparent),
     var(--shadow-2);
 }
 
