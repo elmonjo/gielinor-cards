@@ -529,12 +529,16 @@ select {
 
 /* Cards */
 .gc-card {
+  --pack-glow: rgba(255, 255, 255, 0);
   width: 130px;
   height: 190px;
   background:
     linear-gradient(180deg, #ebe3cd 0%, #d7c8a6 100%);
   border: 3px solid #8e743d;
-  box-shadow: var(--shadow-1);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pack-glow) 42%, transparent),
+    0 0 18px color-mix(in srgb, var(--pack-glow) 28%, transparent),
+    var(--shadow-1);
   border-radius: 7px;
   padding: 6px;
   display: flex;
@@ -545,6 +549,26 @@ select {
   font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
   color: #1a1a1a;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.gc-card--pack-novice {
+  --pack-glow: rgba(184, 184, 184, 0.95);
+}
+
+.gc-card--pack-intermediate {
+  --pack-glow: rgba(87, 184, 126, 0.95);
+}
+
+.gc-card--pack-experienced {
+  --pack-glow: rgba(90, 150, 255, 0.95);
+}
+
+.gc-card--pack-master {
+  --pack-glow: rgba(166, 95, 232, 0.95);
+}
+
+.gc-card--pack-grandmaster {
+  --pack-glow: rgba(255, 161, 72, 0.98);
 }
 
 .gc-head {
@@ -631,7 +655,10 @@ select {
 
 .card-instance:not(.dragging) .gc-card:hover {
   transform: translateY(-6px);
-  box-shadow: var(--shadow-2);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pack-glow) 52%, transparent),
+    0 0 24px color-mix(in srgb, var(--pack-glow) 38%, transparent),
+    var(--shadow-2);
 }
 
 .card-instance.dragging .gc-card {

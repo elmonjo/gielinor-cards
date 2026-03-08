@@ -14,6 +14,23 @@ const TYPE_OPTIONS = ["All", ...new Set(allCards.map(c => c.type))];
 const formatTypeLabel = (value) =>
   value === "All" ? value : value.charAt(0).toUpperCase() + value.slice(1);
 
+const packGlowClass = (path) => {
+  switch (path) {
+    case "Novice":
+      return "gc-card--pack-novice";
+    case "Intermediate":
+      return "gc-card--pack-intermediate";
+    case "Experienced":
+      return "gc-card--pack-experienced";
+    case "Master":
+      return "gc-card--pack-master";
+    case "Grandmaster":
+      return "gc-card--pack-grandmaster";
+    default:
+      return "";
+  }
+};
+
 export default function Binder({ game }) {
   const [pathFilter, setPathFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -186,9 +203,9 @@ export default function Binder({ game }) {
                         ? `Recall ${card.title} to table`
                         : `${card.title} (not collected yet)`
                     }
-                  >
+                    >
                     <div
-                      className={`gc-card ${card.shiny ? "shiny-card" : ""} ${owned ? "" : "binder-card-faded"}`}
+                      className={`gc-card ${packGlowClass(card.path)} ${card.shiny ? "shiny-card" : ""} ${owned ? "" : "binder-card-faded"}`}
                     >
                       <div className="gc-head">
                         <div className="gc-title">{card.title}</div>

@@ -36,6 +36,23 @@ const getClientPoint = (event) => {
   };
 };
 
+const packGlowClass = (path) => {
+  switch (path) {
+    case "Novice":
+      return "gc-card--pack-novice";
+    case "Intermediate":
+      return "gc-card--pack-intermediate";
+    case "Experienced":
+      return "gc-card--pack-experienced";
+    case "Master":
+      return "gc-card--pack-master";
+    case "Grandmaster":
+      return "gc-card--pack-grandmaster";
+    default:
+      return "";
+  }
+};
+
 export default function CardInstance({ card, game }) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -360,7 +377,7 @@ export default function CardInstance({ card, game }) {
         zIndex: card.zIndex
       }}
     >
-      <div className="gc-card">
+      <div className={`gc-card ${packGlowClass(card.path)}`}>
         <div className="gc-head">
           <div className="gc-title">{card.title}</div>
 
