@@ -55,6 +55,8 @@ const packGlowClass = (path) => {
 export default function CardInstance({ card, game }) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const autoPanPoint = useRef(null);
+  const autoPanFrame = useRef(0);
   const catalogCard = allCards.find(entry => entry.id === card.id);
   const imageSrc = catalogCard?.image || card.image;
   const packPath = catalogCard?.path || card.path;
@@ -127,6 +129,31 @@ export default function CardInstance({ card, game }) {
     }
   };
 
+  const stopAutoPanLoop = () => {
+    autoPanPoint.current = null;
+    if (autoPanFrame.current) {
+      window.cancelAnimationFrame(autoPanFrame.current);
+      autoPanFrame.current = 0;
+    }
+  };
+
+  const runAutoPanLoop = () => {
+    if (!dragging.current || !autoPanPoint.current) {
+      autoPanFrame.current = 0;
+      return;
+    }
+
+    autoPanMainAtEdge(autoPanPoint.current);
+    autoPanFrame.current = window.requestAnimationFrame(runAutoPanLoop);
+  };
+
+  const queueAutoPan = (point) => {
+    autoPanPoint.current = point;
+    if (!autoPanFrame.current) {
+      autoPanFrame.current = window.requestAnimationFrame(runAutoPanLoop);
+    }
+  };
+
   const startDrag = (event) => {
     event.preventDefault();
     dragging.current = true;
@@ -152,7 +179,7 @@ export default function CardInstance({ card, game }) {
     if (!dragging.current) return;
 
     const point = getClientPoint(event);
-    autoPanMainAtEdge(point);
+    queueAutoPan(point);
 
     const table = document.querySelector(".table");
     const tableRect = table.getBoundingClientRect();
@@ -201,6 +228,7 @@ export default function CardInstance({ card, game }) {
     window.removeEventListener("touchmove", onTouchMove);
     window.removeEventListener("touchend", onTouchEnd);
     window.removeEventListener("touchcancel", onTouchEnd);
+    stopAutoPanLoop();
 
     const point = getClientPoint(event);
 
