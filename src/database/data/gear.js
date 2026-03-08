@@ -33,7 +33,7 @@
   { id:"mystic_fire_staff", title:"Mystic Fire Staff", type:"gear", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/mystic_fire_staff.png" },
   { id:"xerician_robe_set", title:"Xerician Robe Set", type:"gear", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/xerician_robe_set.png" },
   { id:"wizard_boots", title:"Wizard Boots", type:"gear", rarity:"rare", path:"Novice", shiny:false, image:"/card-images/wizard_boots.png" },
-  { id:"snakeskin_boots", title:"Snakeskin Boots", type:"gear", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/snakeskin_boots.png" },
+  { id:"snakeskin_boots", title:"Snakeskin Armour", type:"gear", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/snakeskin_body.png" },
   { id:"climbing_boots", title:"Climbing Boots", type:"gear", rarity:"rare", path:"Novice", shiny:false, image:"/card-images/climbing_boots.png" },
   { id:"spiked_manacles", title:"Spiked Manacles", type:"gear", rarity:"rare", path:"Novice", shiny:false, image:"/card-images/spiked_manacles.png" },
   { id:"holy_sandals", title:"Holy Sandals", type:"gear", rarity:"rare", path:"Intermediate", shiny:false, image:"/card-images/holy_sandals.png" },
