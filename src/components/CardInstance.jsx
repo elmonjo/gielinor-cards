@@ -77,34 +77,53 @@ export default function CardInstance({ card, game }) {
 
   const autoPanMainAtEdge = (point) => {
     const main = document.querySelector(".main");
-    if (!main) return;
-
-    const bounds = main.getBoundingClientRect();
     let deltaX = 0;
     let deltaY = 0;
 
-    if (point.x > bounds.right - EDGE_SCROLL_THRESHOLD) {
-      deltaX = edgeScrollDelta(bounds.right - point.x);
-    } else if (point.x < bounds.left + EDGE_SCROLL_THRESHOLD) {
-      deltaX = -edgeScrollDelta(point.x - bounds.left);
+    if (main) {
+      const bounds = main.getBoundingClientRect();
+
+      if (point.x > bounds.right - EDGE_SCROLL_THRESHOLD) {
+        deltaX = edgeScrollDelta(bounds.right - point.x);
+      } else if (point.x < bounds.left + EDGE_SCROLL_THRESHOLD) {
+        deltaX = -edgeScrollDelta(point.x - bounds.left);
+      }
+
+      if (point.y > bounds.bottom - EDGE_SCROLL_THRESHOLD) {
+        deltaY = edgeScrollDelta(bounds.bottom - point.y);
+      } else if (point.y < bounds.top + EDGE_SCROLL_THRESHOLD) {
+        deltaY = -edgeScrollDelta(point.y - bounds.top);
+      }
     }
 
-    if (point.y > bounds.bottom - EDGE_SCROLL_THRESHOLD) {
-      deltaY = edgeScrollDelta(bounds.bottom - point.y);
-    } else if (point.y < bounds.top + EDGE_SCROLL_THRESHOLD) {
-      deltaY = -edgeScrollDelta(point.y - bounds.top);
-    }
-
-    if (deltaX !== 0) {
+    if (main && deltaX !== 0) {
       const maxScrollLeft = Math.max(0, main.scrollWidth - main.clientWidth);
       const nextLeft = clamp(main.scrollLeft + deltaX, 0, maxScrollLeft);
       main.scrollLeft = nextLeft;
     }
 
-    if (deltaY !== 0) {
+    if (main && deltaY !== 0) {
       const maxScrollTop = Math.max(0, main.scrollHeight - main.clientHeight);
       const nextTop = clamp(main.scrollTop + deltaY, 0, maxScrollTop);
       main.scrollTop = nextTop;
+    }
+
+    const viewportHeight =
+      typeof window !== "undefined" ? window.innerHeight : 0;
+    if (!viewportHeight) return;
+
+    let pageDeltaY = 0;
+    if (point.y > viewportHeight - EDGE_SCROLL_THRESHOLD) {
+      pageDeltaY = edgeScrollDelta(viewportHeight - point.y);
+    } else if (point.y < EDGE_SCROLL_THRESHOLD) {
+      pageDeltaY = -edgeScrollDelta(point.y);
+    }
+
+    if (pageDeltaY !== 0) {
+      const scrollRoot = document.scrollingElement || document.documentElement;
+      const maxPageScroll = Math.max(0, scrollRoot.scrollHeight - viewportHeight);
+      const nextScrollTop = clamp(window.scrollY + pageDeltaY, 0, maxPageScroll);
+      window.scrollTo(window.scrollX, nextScrollTop);
     }
   };
 
