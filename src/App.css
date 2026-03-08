@@ -530,17 +530,19 @@ select {
 /* Cards */
 .gc-card {
   --pack-glow: rgba(255, 255, 255, 0);
+  --pack-surface-top: #ebe3cd;
+  --pack-surface-bottom: #d7c8a6;
+  --pack-head-top: #4b4a41;
+  --pack-head-bottom: #2f302a;
+  --pack-art-top: #b7c0b4;
+  --pack-art-bottom: #8e978c;
   position: relative;
   width: 130px;
   height: 190px;
   background:
-    linear-gradient(180deg, #ebe3cd 0%, #d7c8a6 100%);
+    linear-gradient(180deg, var(--pack-surface-top) 0%, var(--pack-surface-bottom) 100%);
   border: 3px solid #8e743d;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--pack-glow) 68%, #ffffff 6%),
-    0 0 0 2px color-mix(in srgb, var(--pack-glow) 38%, transparent),
-    0 0 26px color-mix(in srgb, var(--pack-glow) 44%, transparent),
-    var(--shadow-1);
+  box-shadow: var(--shadow-1);
   border-radius: 7px;
   padding: 6px;
   display: flex;
@@ -554,40 +556,56 @@ select {
 }
 
 .gc-card::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--pack-glow) 78%, white 12%);
-  opacity: 0.9;
-  pointer-events: none;
+  content: none;
 }
 
 .gc-card--pack-novice {
-  --pack-glow: rgba(184, 184, 184, 0.95);
+  --pack-surface-top: #ebe7dd;
+  --pack-surface-bottom: #d7d1c3;
+  --pack-head-top: #696760;
+  --pack-head-bottom: #484640;
+  --pack-art-top: #dfe3dc;
+  --pack-art-bottom: #c5ccc1;
 }
 
 .gc-card--pack-intermediate {
-  --pack-glow: rgba(87, 184, 126, 0.95);
+  --pack-surface-top: #e4efe5;
+  --pack-surface-bottom: #cadec9;
+  --pack-head-top: #4f6757;
+  --pack-head-bottom: #34443a;
+  --pack-art-top: #d7ead5;
+  --pack-art-bottom: #b7d2b5;
 }
 
 .gc-card--pack-experienced {
-  --pack-glow: rgba(90, 150, 255, 0.95);
+  --pack-surface-top: #e3ebf6;
+  --pack-surface-bottom: #c8d8ee;
+  --pack-head-top: #50627b;
+  --pack-head-bottom: #344255;
+  --pack-art-top: #d6e4f7;
+  --pack-art-bottom: #b7cbea;
 }
 
 .gc-card--pack-master {
-  --pack-glow: rgba(166, 95, 232, 0.95);
+  --pack-surface-top: #eee4f4;
+  --pack-surface-bottom: #dac8e8;
+  --pack-head-top: #66506f;
+  --pack-head-bottom: #46334d;
+  --pack-art-top: #e3d8ef;
+  --pack-art-bottom: #cab9db;
 }
 
 .gc-card--pack-grandmaster {
-  --pack-glow: rgba(255, 161, 72, 0.98);
+  --pack-surface-top: #f4eadf;
+  --pack-surface-bottom: #ead1b7;
+  --pack-head-top: #7a5a3d;
+  --pack-head-bottom: #553b28;
+  --pack-art-top: #f1dfc8;
+  --pack-art-bottom: #e4c19c;
 }
 
 .gc-head {
-  background: linear-gradient(180deg, #4b4a41 0%, #2f302a 100%);
+  background: linear-gradient(180deg, var(--pack-head-top) 0%, var(--pack-head-bottom) 100%);
   border: 2px solid #6f6750;
   border-radius: 5px;
   padding: 4px 6px;
@@ -628,7 +646,7 @@ select {
   border: 2px solid #7a6840;
   border-radius: 5px;
   background:
-    linear-gradient(180deg, #b7c0b4, #8e978c);
+    linear-gradient(180deg, var(--pack-art-top), var(--pack-art-bottom));
   overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(32, 26, 16, 0.25);
 }
@@ -670,11 +688,7 @@ select {
 
 .card-instance:not(.dragging) .gc-card:hover {
   transform: translateY(-6px);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--pack-glow) 82%, #ffffff 10%),
-    0 0 0 2px color-mix(in srgb, var(--pack-glow) 50%, transparent),
-    0 0 34px color-mix(in srgb, var(--pack-glow) 58%, transparent),
-    var(--shadow-2);
+  box-shadow: var(--shadow-2);
 }
 
 .card-instance.dragging .gc-card {
