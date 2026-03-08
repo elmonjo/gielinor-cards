@@ -560,48 +560,48 @@ select {
 }
 
 .gc-card--pack-novice {
-  --pack-surface-top: #ebe7dd;
-  --pack-surface-bottom: #d7d1c3;
-  --pack-head-top: #696760;
-  --pack-head-bottom: #484640;
-  --pack-art-top: #dfe3dc;
-  --pack-art-bottom: #c5ccc1;
+  --pack-surface-top: #e9e3d8;
+  --pack-surface-bottom: #d7ccb9;
+  --pack-head-top: #625f58;
+  --pack-head-bottom: #43403a;
+  --pack-art-top: #d9ddd4;
+  --pack-art-bottom: #c0c7bc;
 }
 
 .gc-card--pack-intermediate {
-  --pack-surface-top: #e4efe5;
-  --pack-surface-bottom: #cadec9;
-  --pack-head-top: #4f6757;
-  --pack-head-bottom: #34443a;
-  --pack-art-top: #d7ead5;
-  --pack-art-bottom: #b7d2b5;
+  --pack-surface-top: #e5eadf;
+  --pack-surface-bottom: #d0d8c6;
+  --pack-head-top: #566250;
+  --pack-head-bottom: #3c4538;
+  --pack-art-top: #d8e1d2;
+  --pack-art-bottom: #bcc8b2;
 }
 
 .gc-card--pack-experienced {
-  --pack-surface-top: #e3ebf6;
-  --pack-surface-bottom: #c8d8ee;
-  --pack-head-top: #50627b;
-  --pack-head-bottom: #344255;
-  --pack-art-top: #d6e4f7;
-  --pack-art-bottom: #b7cbea;
+  --pack-surface-top: #e4e9f0;
+  --pack-surface-bottom: #ccd5df;
+  --pack-head-top: #586271;
+  --pack-head-bottom: #3c4450;
+  --pack-art-top: #d8e0eb;
+  --pack-art-bottom: #bcc8d7;
 }
 
 .gc-card--pack-master {
-  --pack-surface-top: #eee4f4;
-  --pack-surface-bottom: #dac8e8;
-  --pack-head-top: #66506f;
-  --pack-head-bottom: #46334d;
-  --pack-art-top: #e3d8ef;
-  --pack-art-bottom: #cab9db;
+  --pack-surface-top: #ece4ee;
+  --pack-surface-bottom: #d8cade;
+  --pack-head-top: #625967;
+  --pack-head-bottom: #443d48;
+  --pack-art-top: #e0d7e5;
+  --pack-art-bottom: #c6bacb;
 }
 
 .gc-card--pack-grandmaster {
-  --pack-surface-top: #f4eadf;
-  --pack-surface-bottom: #ead1b7;
-  --pack-head-top: #7a5a3d;
-  --pack-head-bottom: #553b28;
-  --pack-art-top: #f1dfc8;
-  --pack-art-bottom: #e4c19c;
+  --pack-surface-top: #f0e5d9;
+  --pack-surface-bottom: #dfcbb6;
+  --pack-head-top: #6c5846;
+  --pack-head-bottom: #4d3e31;
+  --pack-art-top: #eadbc8;
+  --pack-art-bottom: #d8bea2;
 }
 
 .gc-head {
