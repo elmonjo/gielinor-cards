@@ -187,6 +187,15 @@ export default function CardInstance({ card, game }) {
           return { ...c, x: newX, y: newY, snappedToId: null, snapEdge: null };
         }
 
+        if (c.snappedToId === card.instanceId) {
+          return {
+            ...c,
+            snappedToId: null,
+            snapEdge: null,
+            previewSnap: c.instanceId === snapTarget
+          };
+        }
+
         return {
           ...c,
           previewSnap: c.instanceId === snapTarget

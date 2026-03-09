@@ -199,6 +199,8 @@ function keepOnlyAlignedSnapLinks(cardList) {
 
 function normalizeTableCardsForSave(cardList) {
   const runtimeSize = getRuntimeCardSize();
+  const bounds = getLayoutBounds();
+  const spanY = Math.max(1, bounds.maxY - TABLE_TOP_GUTTER);
   return (cardList || []).map(card => {
     const rawX = Number(card?.x);
     const rawY = Number(card?.y);
@@ -209,6 +211,8 @@ function normalizeTableCardsForSave(cardList) {
       ...card,
       x: nextX,
       y: nextY,
+      xRatio: bounds.maxX > 0 ? clamp01(nextX / bounds.maxX) : 0,
+      yRatio: clamp01((nextY - TABLE_TOP_GUTTER) / spanY),
       layoutCardWidth: runtimeSize.width,
       layoutCardHeight: runtimeSize.height
     };
@@ -234,6 +238,8 @@ function resolveTableCardsFromSave(cardList) {
     rawCards.map(card => Number(card?.layoutCardHeight)),
     inferredLegacyHeight
   );
+  const isSameLayoutClass =
+    savedGlobalWidth === runtimeSize.width && savedGlobalHeight === runtimeSize.height;
   const scaleX = runtimeSize.width / savedGlobalWidth;
   const scaleY = runtimeSize.height / savedGlobalHeight;
 
@@ -250,9 +256,18 @@ function resolveTableCardsFromSave(cardList) {
 
     return {
       ...card,
-      x: hasRaw ? Math.max(rawX * scaleX, 0) : bounds.maxX * xRatio,
+      x: hasRaw
+        ? Math.max(isSameLayoutClass ? rawX : (Number.isFinite(savedXRatio) ? bounds.maxX * xRatio : rawX * scaleX), 0)
+        : bounds.maxX * xRatio,
       y: hasRaw
-        ? Math.max(TABLE_TOP_GUTTER + (rawY - TABLE_TOP_GUTTER) * scaleY, TABLE_TOP_GUTTER)
+        ? Math.max(
+            isSameLayoutClass
+              ? rawY
+              : Number.isFinite(savedYRatio)
+                ? TABLE_TOP_GUTTER + spanY * yRatio
+                : TABLE_TOP_GUTTER + (rawY - TABLE_TOP_GUTTER) * scaleY,
+            TABLE_TOP_GUTTER
+          )
         : TABLE_TOP_GUTTER + spanY * yRatio,
       layoutCardWidth: runtimeSize.width,
       layoutCardHeight: runtimeSize.height
@@ -450,6 +465,10 @@ function cloudDepKey(cloud) {
   return JSON.stringify([cloud.enabled, cloud.databaseUrl, cloud.accessToken, cloud.userId]);
 }
 
+function cloudHydrationKey(cloud) {
+  return JSON.stringify([cloud.enabled, cloud.databaseUrl, cloud.userId]);
+}
+
 function cloudUrl(cloud) {
   return `${cloud.databaseUrl.replace(/\/$/, "")}/user_game_state/${cloud.userId}.json?auth=${encodeURIComponent(cloud.accessToken)}`;
 }
@@ -592,6 +611,12 @@ export function useGameState(options = "default") {
     const remapCardsToViewport = () => {
       const runtimeSize = getRuntimeCardSize();
       const previousSize = lastCardSizeRef.current || runtimeSize;
+      const layoutModeChanged =
+        previousSize.width !== runtimeSize.width || previousSize.height !== runtimeSize.height;
+      if (!layoutModeChanged) {
+        lastCardSizeRef.current = runtimeSize;
+        return;
+      }
       const widthScale =
         previousSize.width > 0 ? runtimeSize.width / previousSize.width : 1;
       const heightScale =
@@ -713,7 +738,7 @@ export function useGameState(options = "default") {
     return () => {
       canceled = true;
     };
-  }, [cloudEnabled, cloudDepKey(cloudConfig)]);
+  }, [cloudEnabled, cloudHydrationKey(cloudConfig)]);
 
   function selectProfile(profileId) {
     const selected = profiles.find(p => p.id === profileId);
